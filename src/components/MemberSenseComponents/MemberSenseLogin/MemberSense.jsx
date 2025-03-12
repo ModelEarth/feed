@@ -70,12 +70,19 @@ const MemberSense = ({
     }
   }, [initialToken, initialServerInfo]);
 
+  useEffect(()=>{
+    if(useMockData===true)handleTokenSubmit();
+  }, [useMockData])
+
+  async function handleSampleDiscord() {
+    onToggleMockData(true); 
+  }
   /**
    * Handles token submission and validation
    * Includes minimum validation time for UX purposes
    */
   const handleTokenSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setIsValidating(true);
     setValidationMessage(null);
 
@@ -235,9 +242,9 @@ const MemberSense = ({
                 >
                   How to Get My Team&apos;s Token?
                 </a>
-              </div>
-              <div>
+              <div className='token-info token-link' onClick={handleSampleDiscord}>
                 View Sample Discord Team and Posts
+              </div>
               </div>
               <div className="permissions-info">
                 <h4>Required Bot Permissions:</h4>
@@ -251,7 +258,7 @@ const MemberSense = ({
             </>
         )}
 
-        {!isLoggedIn && renderDataModeToggle()}
+        {/* {!isLoggedIn && renderDataModeToggle()} */}
         {parentLoading ? (
           <div className="loading-container">
             <Spinner />

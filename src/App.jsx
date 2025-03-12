@@ -214,6 +214,7 @@ function App() {
         setIsLoggingOut(false);
         setIsLoading(false);
         setIsTransitioning(false);
+        setUseMockData(false)
       }, 300);
       return;
     }
@@ -299,7 +300,7 @@ function App() {
             serverInfo={serverInfo}
             isFullScreen={isFullScreen}
             useMockData={useMockData}
-            onToggleMockData={() => setUseMockData(!useMockData)}
+            onToggleMockData={(value) => setUseMockData(value)}
             {...commonProps}
           />
         );
