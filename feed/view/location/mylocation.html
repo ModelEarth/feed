@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html;">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+<title>Location Projects</title>
+
+<!-- External Libraries -->
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+<!-- Custom CSS -->
+<link rel="stylesheet" href="locationSearchStyles.css">
+</head>
+
+<body>
+
+<!-- Autocomplete Component -->
+<div class="autocomplete-container">
+    <input type="text" id="autocomplete-input" class="autocomplete-input" autocomplete="off" placeholder="Search for a location..."/>
+    <div id="loading">Loading...</div>
+    <ul id="autocomplete-results" class="autocomplete-results"></ul>
+</div>
+
+<!-- Content Section -->
+<div class="content contentpadding">
+  <button id="btnlocate" onclick="getGeolocation()">
+    Get my coordinates!
+  </button>
+  <div id="mycoords"></div>
+  <div id="requests"></div>
+</div>
+
+<!-- Custom JS -->
+<script src="locationSearch.js"></script>
+
+<script>
+const mycoords = document.getElementById('mycoords');
+
+function error(err) {
+    mycoords.innerHTML = `Failed to locate. Error: ${err.message}`;
+}
+
+function success(pos) {
+    mycoords.innerHTML = 'Located.';
+    displayRequests(pos.coords.latitude, pos.coords.longitude);
+}
+
+function getGeolocation() {
+    if (navigator.geolocation) {
+        mycoords.innerHTML = 'Locating…';
+        navigator.geolocation.getCurrentPosition(success, error);
+    } else { 
+        mycoords.innerHTML = 'Geolocation is not supported by this browser.';
+    }
+}
+
+getGeolocation();
+
+window.onload = function() {
+    var button = document.getElementById("btnlocate");
+    button.addEventListener("click", updateGlobalAddress);
+}
+</script>
+
+</body>
+</html>
