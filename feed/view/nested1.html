@@ -1,0 +1,216 @@
+<!--
+Second to last output below. The last one was bonkers.
+https://chatgpt.com/share/a453b831-b3ca-4dfd-9280-ef32bd63434a
+-->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nested Data Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .node {
+            margin-left: 20px;
+        }
+        .children {
+            display: none;
+        }
+        .arrow {
+            cursor: pointer;
+            display: inline-block;
+            margin-right: 5px;
+            transition: transform 0.3s ease;
+        }
+        .expanded > .arrow {
+            transform: rotate(90deg);
+        }
+        .truncate {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            max-width: 400px;
+            display: inline-block;
+        }
+        .array-item {
+            margin-left: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="data-container"></div>
+<button id="open-all">Open All</button>
+
+<script>
+    function isImageUrl(url) {
+        return /\.(jpg|jpeg|png|gif|bmp|svg|webp)$/.test(url);
+    }
+
+    function createNodeElement(key, value, isArrayItem = false) {
+        const container = document.createElement('div');
+        container.className = 'node';
+
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.innerHTML = '&#9654;';
+
+        const content = document.createElement('span');
+
+        if (Array.isArray(value)) {
+            if (!isArrayItem) {
+                content.innerHTML = `<strong>${key}:</strong>`;
+                content.prepend(arrow);
+            }
+
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'children';
+
+            value.forEach((item, index) => {
+                const itemContainer = createNodeElement("", item, true);
+                childrenContainer.appendChild(itemContainer);
+            });
+
+            container.appendChild(content);
+            container.appendChild(childrenContainer);
+
+            arrow.onclick = () => {
+                const isExpanded = container.classList.toggle('expanded');
+                arrow.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+                childrenContainer.style.display = isExpanded ? 'block' : 'none';
+                if (isExpanded) {
+                    openNestedSections(childrenContainer);
+                } else {
+                    closeNestedSections(childrenContainer);
+                }
+            };
+
+            if (!isArrayItem) {
+                // Attach the event handler only if it's not an array item
+                container.appendChild(content);
+                container.appendChild(childrenContainer);
+            }
+        } else if (typeof value === 'object' && value !== null) {
+            content.innerHTML = `<strong>${key}:</strong>`;
+            content.prepend(arrow);
+
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'children';
+
+            for (const [childKey, childValue] of Object.entries(value)) {
+                childrenContainer.appendChild(createNodeElement(childKey, childValue));
+            }
+
+            container.appendChild(content);
+            container.appendChild(childrenContainer);
+
+            content.onclick = () => {
+                const isExpanded = container.classList.toggle('expanded');
+                arrow.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+                childrenContainer.style.display = isExpanded ? 'block' : 'none';
+                if (isExpanded) {
+                    openNestedSections(childrenContainer);
+                } else {
+                    closeNestedSections(childrenContainer);
+                }
+            };
+        } else {
+            if (isArrayItem) {
+                content.innerHTML = `${value}`;
+                content.prepend(arrow);
+            } else {
+                if (isImageUrl(value)) {
+                    content.innerHTML = `<strong>${key}:</strong> <img src="${value}" alt="${key}" style="max-width: 100px;">`;
+                } else if (typeof value === 'string' && value.startsWith('http')) {
+                    content.innerHTML = `<strong>${key}:</strong> <a href="${value}" target="_blank" class="truncate">${value}</a>`;
+                } else {
+                    content.innerHTML = `<strong>${key}:</strong> ${value}`;
+                }
+            }
+            container.appendChild(content);
+        }
+
+        return container;
+    }
+
+    function openNestedSections(container) {
+        const childNodes = container.querySelectorAll('.node');
+        childNodes.forEach(node => {
+            const arrow = node.querySelector('.arrow');
+            node.classList.add('expanded');
+            const children = node.querySelector('.children');
+            if (children) {
+                children.style.display = 'block';
+                arrow.style.transform = 'rotate(90deg)';
+            }
+        });
+    }
+
+    function closeNestedSections(container) {
+        const childNodes = container.querySelectorAll('.node');
+        childNodes.forEach(node => {
+            const arrow = node.querySelector('.arrow');
+            node.classList.remove('expanded');
+            const children = node.querySelector('.children');
+            if (children) {
+                children.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    function displayData(data, container) {
+        container.innerHTML = '';
+        for (const [key, value] of Object.entries(data)) {
+            container.appendChild(createNodeElement(key, value));
+        }
+    }
+
+    function openAll() {
+        const nodes = document.querySelectorAll('.node');
+        nodes.forEach(node => {
+            node.classList.add('expanded');
+            const arrow = node.querySelector('.arrow');
+            const children = node.querySelector('.children');
+            if (children) {
+                children.style.display = 'block';
+                arrow.style.transform = 'rotate(90deg)';
+            }
+        });
+    }
+
+    document.getElementById('open-all').addEventListener('click', openAll);
+
+    const data = {
+        "user": {
+            "name": "John Doe",
+            "profile_pic": "https://example.com/profile.jpg",
+            "website": "https://example.com",
+            "social": {
+                "twitter": "https://twitter.com/johndoe",
+                "linkedin": "https://linkedin.com/in/johndoe"
+            }
+        },
+        "posts": [
+            {
+                "title": "First Post",
+                "content": "This is the first post."
+            },
+            {
+                "title": "Second Post",
+                "content": "This is the second post."
+            }
+        ]
+    };
+
+    const container = document.getElementById('data-container');
+    displayData(data, container);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="favicons/site.webmanifest" />
+    <link rel="mask-icon" href="favicons/safari-pinned-tab.svg" color="#5bbad5" />
+    <meta name="msapplication-TileColor" content="#da532c" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>Feed Player</title>
+    <script type="text/javascript" src="https://model.earth/localsite/js/localsite.js?showheader=true"></script>
+
+    <script>
+      loadMarkdown("/feed/README.md", "readmeDiv", "_parent");
+    </script>
+  </head>
+  <body>
+    <!-- template.html is sent to dist/index.html -->
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <div class="content contentpadding large-list" style="padding-top: 10px">
+      <div id="readmeDiv"></div>
+    </div>
+  </body>
+</html>

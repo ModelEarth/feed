@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<meta charset="utf-8">
+<link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Feed View</title>
+<script type="text/javascript" src="/localsite/js/d3.v5.min.js" id="/localsite/js/d3.v5.min.js"></script>
+<script type="text/javascript" src="/localsite/js/jquery.min.js" id="/localsite/js/jquery.min.js"></script>
+
+<link rel="stylesheet" href="/localsite/css/base.css" id="/localsite/css/base.css" />
+<script type="text/javascript" src="/localsite/js/localsite.js?showheader=true&showsearch=false"></script>
+
+
+<link type="text/css" rel="stylesheet" href="/food/css/label.css" />
+<script type="text/javascript" src="/food/js/label.js"></script>
+
+<!--
+	How to use Promise.all to wait for multiple sources (csv, json) 
+	http://learnjsdata.com/read_data.html
+-->
+
+<style>
+/* Generic Styling, for Desktops/Laptops */
+table { 
+	width: 100%; 
+	border-collapse: collapse; 
+}
+/* Zebra striping */
+tr:nth-of-type(odd) { 
+	background: #eee; 
+}
+th { 
+	background: #333; 
+	color: white; 
+	font-weight: bold; 
+	cursor: s-resize;
+	background-repeat: no-repeat;
+    background-position: 3% center;
+}
+td, th { 
+	padding: 6px; 
+	border: 1px solid #ccc; 
+	text-align: left; 
+}
+
+th.des:after {
+  content: "\21E9";
+}
+
+th.aes:after {
+  content: "\21E7";
+}
+
+/* 
+Max width before this PARTICULAR table gets nasty
+This query will take effect for any screen smaller than 760px
+and also iPads specifically.
+*/
+@media 
+only screen and (max-width: 760px),
+(min-device-width: 768px) and (max-device-width: 1024px)  {
+
+	/* Force table to not be like tables anymore */
+	table, thead, tbody, th, td, tr { 
+		display: block; 
+	}
+	
+	/* Hide table headers (but not display: none;, for accessibility) */
+	thead tr { 
+		position: absolute;
+		top: -9999px;
+		left: -9999px;
+	}
+	
+	tr { border: 1px solid #ccc; }
+	
+	td { 
+		/* Behave  like a "row" */
+		border: none;
+		border-bottom: 1px solid #eee; 
+		position: relative;
+		padding-left: 50%; 
+	}
+	
+	td:before { 
+		/* Now like a table header */
+		position: absolute;
+		/* Top/left values mimic padding */
+		top: 6px;
+		left: 6px;
+		width: 45%; 
+		padding-right: 10px; 
+		white-space: nowrap;
+	}
+	
+	/*
+	Label the data
+	*/
+	td:before {
+	  content: attr(data-th) ": ";
+      font-weight: bold;
+      width: 6.5em;
+      display: inline-block;
+	}
+}
+
+/* Smartphones (portrait and landscape) ----------- */
+@media only screen
+and (min-device-width : 320px)
+and (max-device-width : 480px) {
+	body { 
+		padding: 0; 
+		margin: 0; 
+		width: 320px; }
+	}
+
+/* iPads (portrait and landscape) ----------- */
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+	body { 
+		width: 495px; 
+	}
+}
+</style>
+
+<script type="text/javascript">
+
+	var jsonList = {"Table" : [
+		{"value":"none","name":"Select a feed..."},
+
+		{"value":"food","name":"USDA Food List"},
+		{"value":"usda","name":"USDA Nutrition Label"},
+		{"value":"farmfresh","name":"Farm Fresh (Michigan)"},
+    {"value":"nasa","name":"NASA Image Feed"},
+    {"value":"comtrade","name":"Comtrade (CORS)"},
+    {"value":"serp","name":"Serp APIname (CORS)"},
+
+    {"value":"gdc","name":"GDC Google Data Commons - Forests"},
+    {"value":"US:Count_Person","name":"GDC US State Populations"},
+    {"value":"LandCoverFraction_Forest","name":"GDC Land Covered by Forests"},
+    {"value":"water","name":"Water (dc/g/SDG_6)"},
+
+    {"value":"datausa","name":"DataUSA State Populations"},
+    {"value":"seeclickfix-311","name":"See Click Fix Requests"},
+    {"value":"open311","name":"See Click Fix Requests (CORS)"},
+    {"value":"bsky","name":"BlueSky Model.Earth RSS (CORS)"},
+
+    //{"value":"foryou","name":"News For You (CORS)"},
+
+		{"value":"sectors","name":"USEEIO State Sectors"},
+		{"value":"flow","name":"USEEIO State Impact Flow"},
+		{"value":"Dmatrix","name":"USEEIO D Matrix Commodities"},
+		{"value":"demo","name":"DemocracyLab Projects"},
+		{"value":"civictechindex","name":"Civic Tech Organizations"},
+		{"value":"civictechlinks","name":"Civic Tech Links"},
+		{"value":"epd","name":"Environmental Product Declarations (EPD)"},
+  ]}
+
+// Might need json support change. TypeError: Cannot read properties of null (reading 'match')
+// 		{"value":"film-scouting","name":"Film Scouting Locations"},
+
+// To develop
+//    {"value":"Continents","name":"Emissions by Continent"},
+//     {"value":"jobs","name":"Jobs Random Forest Accuracy"},
+
+// 403 - Get a new API to activate
+// {"value":"diffbot","name":"Diffbot"},
+
+document.addEventListener('hashChangeEvent', function (elem) {
+	let hash = getHash();
+	if (hash.feed != priorHash.feed) {
+		updateHash({'path':''});
+ 		displayFeed();
+ 	}
+}, false);
+
+$(document).ready(function () {
+  var listItems= "";
+  for (var i = 0; i < jsonList.Table.length; i++){
+    listItems+= "<option value='" + jsonList.Table[i].value + "'>" + jsonList.Table[i].name + "</option>";
+  }
+  $("#apiFeeds").html(listItems);
+  displayFeed();
+
+  $('#viewRaw').click(function(event) {
+      //event.preventDefault();
+      $('#viewRaw').hide();$('#hideRaw').show();
+      $('#resultJson').show();
+  });
+  $('#hideRaw').click(function(event) {
+      //event.preventDefault();
+      $('#hideRaw').hide();$('#viewRaw').show();
+      $('#resultJson').hide();
+  });
+});
+
+document.addEventListener('DOMContentLoaded', (event) => {
+  const apiURLInput = document.getElementById('apiURL');
+  const apiKeyInput = document.getElementById('apiKey');
+  const addressInput = document.getElementById('autocomplete-input');
+  const refreshButton = document.getElementById('refreshButton');
+
+  apiURLInput.addEventListener('focus', function() {
+      refreshButton.style.display = 'inline';
+  });
+
+  apiURLInput.addEventListener('blur', function(event) {
+      if (!event.relatedTarget || event.relatedTarget.id !== 'refreshButton') {
+          refreshButton.style.display = 'none';
+      }
+  });
+
+  // Submit when hitting enter in URL and APIkey fields. To do: make this a loop.
+  apiURLInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+          event.preventDefault();
+          refreshDisplay();
+      }
+  });
+  apiKeyInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+          event.preventDefault();
+          refreshDisplay();
+      }
+  });
+  addressInput.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
+      		alert("Address/latlon yet applied to API URL.")
+          event.preventDefault();
+          refreshDisplay();
+      }
+  });
+
+  document.addEventListener('click', function(event) {
+      if (event.target !== apiURLInput && event.target !== refreshButton) {
+          refreshButton.style.display = 'none';
+      }
+  });
+
+  refreshButton.addEventListener('click', function(event) {
+        //const apiURL = document.getElementById('apiURL').value;
+			  //console.log('API URL Submitted:', apiURL);
+			  refreshDisplay();
+  });
+});
+
+let activeFeed = {};
+function displayFeed() {
+	let hash = getHash();
+	if (!hash.feed || hash.feed == "none") {
+		if (!hash.path) {
+			hash.feed = "usda"
+		}
+	}
+	$("#resultFull").hide();
+	$("#resultCascade").hide();
+	$("#resultJson").html("");
+	$("#resultLoading").show(); // .text("Loading...");
+	$('#pageTitleText').html("");
+	if (hash.feed != priorHash.feed) {
+		$('#viewRaw').show();$('#hideRaw').hide();
+		$('#apiURL').val("");
+	}
+	$("#corsLink").hide();
+	$("#apiKeyHolder").hide();
+	$("#apiFeeds option[value='" + hash.feed + "']").prop("selected", true);
+
+	//var zip = param["zip"] || "30318";
+	hash.zip = hash.zip || "30318";
+	//var zip = param.zip;
+	//if (!param.zip) {
+	//	param.zip = "30318"
+	//}
+	activeFeed.useCORS = false;
+	var barName = "title"
+	var quantity = 1;
+	$('.ziptext').text(hash.zip);
+
+	// Returns: blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource
+	//var url = "https://kg.diffbot.com/search/?query=type%3ACorporation+locations.postalCode%3A%22" + zip + "%22+&from=0&size=5&token=31c80e03058e4f5b86585fb9e97640a6&active_tab=visual)"
+	
+	// General Mills - Returns 3
+	//var url = "https://kg.diffbot.com/kg/dql_endpoint?type=query&token=31c80e03058e4f5b86585fb9e97640a6&size=3&from=0&query=type%3AOrganization%20name%3A%22General%20Mills%22";
+	
+	let url = "";
+	if (hash.path) {
+		url = hash.path;
+		$("#apiURL").val(url);
+	}
+
+	// selected_array[] is declared in /localsite/js/localsite.js
+
+	// https://github.com/ModelEarth/data-commons/blob/main/docs/air/emissions/data/API_EN.ATM.CO2E.PC_DS2_zh_csv_v2_45186.csv
+
+	var latitude = localStorage.latitude ? localStorage.latitude : 41.307;
+	var longitude = localStorage.longitude ? localStorage.longitude : -72.925;
+
+	if (hash.feed == "bsky") {
+		//Multiple api urls with | as delimiter
+		url = "https://bsky.app/profile/did:plc:ileopdnhib52emw3veem5zxk/rss|https://bsky.app/profile/did:plc:c7cowkyakvxksimml3k2xs5f/rss|https://bsky.app/profile/did:plc:xenbfv5wf6xharo6epphpyek/rss|https://bsky.app/profile/did:plc:ernqnkihzlup6rjajq55newo/rss";
+		activeFeed.useCORS = true;
+	} else if (hash.feed == "foryou") {
+
+		// To implement Google News foryou, 
+    // get an API key for a screenscraper
+    // https://chatgpt.com/share/dc619da9-df3c-4acb-a7e4-44a78fb699a7
+
+		url = "https://news.google.com/foryou";
+		activeFeed.useCORS = true;
+	} else if (hash.feed == "comtrade") {
+		// comtrade not woring yet, returns:  Unexpected end of JSON input
+		urlX = "https://comtradeapi.un.org/public/v1/getDATariffline/C/M/HS?reporter=USA&year=2020&trade_type=1&maxrec=20";
+		url = "https://comtradeapi.un.org/public/v1/getDATariffline/C/M/HS?reporter=USA&ps=2020&rg=1&fmt=json&maxrec=20";
+		activeFeed.useCORS = true;
+	} else if (hash.feed == "food") {
+		// data-commons/docs/food/network/api_to_path.js
+		url = "https://api.nal.usda.gov/fdc/v1/foods/list?dataType=Foundation,SR%20Legacy&pageSize=5&pageNumber=1&api_key=bLecediTVa2sWd8AegmUZ9o7DxYFSYoef9B4i1Ml";
+	} else if (hash.feed == "usda") { // Nutrition label
+		$('#pageTitle').html("Nutrition label");
+		url = "https://api.nal.usda.gov/fdc/v1/food/2015943?api_key=bLecediTVa2sWd8AegmUZ9o7DxYFSYoef9B4i1Ml";
+		//selected_array = ["foodAttributes"];
+		$('#pageTitleText').html("View <a href='/data-commons/docs/food/'>Label Template</a>.<br><br>");
+	} else if (hash.feed == "farmfresh") {
+		$('#pageTitle').html("Farm Fresh");
+		url = "https://www.usdalocalfoodportal.com/api/farmersmarket/?apikey=UXLbsdPdCU&state=mi";
+	} else if (hash.feed == "jobs") {
+		$('#pageTitle').html("Jobs Random Forest Accuracy");
+		url = "/RealityStream/output/jobs/CV-RandomForestClassifier_accuracy.yaml";
+
+	} else if (hash.feed == "diffbot") {
+		quantity = 2;
+		$('#pageTitle').html("DiffBot JSON API - ZIP CODE " + hash.zip);
+		url = "https://kg.diffbot.com/kg/dql_endpoint?type=query&token=31c80e03058e4f5b86585fb9e97640a6&size=" + quantity + "&from=0&query=type%3ACorporation";
+		if (hash.zip) {
+			url += "+locations.postalCode%3A%22" + hash.zip + "%22+";
+		}
+		//selected_array=["founders","foundingDate","images","location","locations","yearlyRevenues","categories"];
+		barName = "name"
+	} else if (hash.feed == "nasa") {
+		$('#pageTitle').html("NASA Image Feed");
+		// NASA images and videos
+		url = "https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY&hd=True&count=2"; // &count=1
+		selected_array = ["title","date","explanation","url","hdurl"]; // "title"
+		barName = "title"
+	} else if (hash.feed == "serp") {
+		//$('#pageTitleText').html("Append your API and hit refresh.");
+		// &location=New+York&hl=en&gl=us
+		url = "https://serpapi.com/search.json?q=Open+WebUI&google_domain=google.com&api_key=";
+		activeFeed.useCORS = true;
+		$("#apiKeyHolder").show();
+		} else if (hash.feed == "water") {
+		
+		url = "https://api.datacommons.org/v2/node?key=AIzaSyCTI4Xz-UW_G2Q2RfknhcfdAnTHq5X5XuI&nodes=dc/g/SDG_6&property=-%3E*";
+
+	} else if (hash.feed == "US:Count_Person") {
+		$('#pageTitle').html("US State Populations");
+		url = "https://api.datacommons.org/v2/observation?key=AIzaSyCTI4Xz-UW_G2Q2RfknhcfdAnTHq5X5XuI&date=LATEST&entity.dcids=country%2FUSA&select=entity&select=variable&select=value&select=date&variable.dcids=Count_Person";
+
+		$('#pageTitleText').html('"expression": country/USA<-containedInPlace+{typeOf:State}"<br><a href="https://docs.datacommons.org/api/rest/v2/observation">About GDC v2 Observation API</a> - <a href="https://docs.datacommons.org/api/rest/v2/resolve">Find a DCID</a><br><br>');
+	} else if (hash.feed == "LandCoverFraction_Forest") {
+		$('#pageTitle').html("Land Cover Forest"); // County but not State
+		url = "https://api.datacommons.org/v2/observation?key=AIzaSyCTI4Xz-UW_G2Q2RfknhcfdAnTHq5X5XuI&date=2015&date=LATEST&entity.expression=geoId%2F06%3C-containedInPlace%2B%7BtypeOf%3ACounty%7D&select=date&select=entity&select=value&select=variable&variable.dcids=LandCoverFraction_Forest";
+		// = "response.byVariable.LandCoverFraction_Forest.byEntity";
+
+	} else if (hash.feed == "datausa") {
+		url = "https://datausa.io/api/data?drilldowns=State&measures=Population&year=latest";
+
+	} else if (hash.feed == "gdc") {
+		// node, resolve or observation
+
+		// https://docs.datacommons.org/api/rest/v2/observation
+
+		u = "https://api.datacommons.org/v2/observation?key=AIzaSyCTI4Xz-UW_G2Q2RfknhcfdAnTHq5X5XuI&";
+		// Q30 = country/USA
+		// Q6256
+		//nodes=Q6256&property=<-wikidataId->dcid";
+		// property=<-*
+
+		// California Counties
+		expressionX = "entity.expression=" + encodeURIComponent("geoId/06<-containedInPlace+{typeOf:County}");
+
+		// Georgia Counties
+		expressionX = "entity.expression=" + encodeURIComponent("geoId/13<-containedInPlace+{typeOf:County}");
+
+		// Fulton County
+		expression = "entity.dcids=geoId/13121";
+
+		//var dates = ['2016', '2017','2018', '2019'];
+		//alert(encodeURIComponent(dates.join(',')));
+
+		url = u + expression + "&date=2019&select=date&select=entity&select=value&select=variable&variable.dcids=LandCoverFraction_Forest"
+	} else if (hash.feed == "seeclickfix-311") {
+		$('#pageTitle').html("See Click Fix - v2");
+		url = `https://seeclickfix.com/api/v2/issues?lat=${latitude}&lng=${longitude}&zoom=8&per_page=10`;
+		$('#pageTitleText').html("<a href='https://seeclickfix.com/open311/v2/docs'>About Open311 API</a><br><br>");
+		selected_array = ["issues"];
+		barName = "summary"
+	} else if (hash.feed == "open311") {
+		url = `https://seeclickfix.com/open311/v2/requests.json?lat=${latitude}&long=${longitude}`;
+		activeFeed.useCORS = true;
+	} else if (hash.feed == "film-scouting") {
+		$('#pageTitle').html("Film Scounting Locations");
+		url = "https://raw.githubusercontent.com/GeorgiaFilm/cameraready_locations_curl/main/cameraready.json";
+	} else if (hash.feed == "sectors") {
+		$('#pageTitleText').html("USEEIO Sectors");
+		url = "https://raw.githubusercontent.com/ModelEarth/OpenFootprint/main/impacts/2020/GAEEIOv1.0-s-20/sectors.json";
+	} else if (hash.feed == "flow") {
+		$('#pageTitleText').html("USEEIO Flow GAEEIOv1.0-s-20");
+		url = "https://raw.githubusercontent.com/ModelEarth/OpenFootprint/main/impacts/2020/GAEEIOv1.0-s-20/flows.json";
+	} else if (hash.feed == "Dmatrix") {
+		$('#pageTitleText').html("D Matrix");
+		url = "https://raw.githubusercontent.com/ModelEarth/OpenFootprint/main/impacts/2020/GAEEIOv1.0-s-20/matrix/D.json";
+	} else if (hash.feed == "demo") {
+		// Limited domains - https://github.com/DemocracyLab/CivicTechExchange/issues/788
+		url = "https://www.democracylab.org/api/projects?page=2&sortField=-project_date_modified";
+	} else if (hash.feed == "civictechindex") {
+		$('#pageTitle').html("Civic Tech Organizations");
+		//url = "https://api-stage.civictechindex.org/swagger/?format=openapi"
+		url = "https://api-stage.civictechindex.org/api/organizations/";
+		barName = "name"
+	} else if (hash.feed == "civictechlinks") {
+		$('#pageTitle').html("Civic Tech Links");
+		url = "https://api-stage.civictechindex.org/api/links/";
+		barName = "link_type"
+	} else if (hash.feed == "epd") {
+		url = "/io/template/feed/toy100.json";
+		$('#pageTitleText').html("10 of 100 static rows from <a href='/io/template/feed/toy100.json'>2.5 MB JSON</a> for comparison with <a href='/io/template/feed/'>BuildingTransparency API Pull</a>.<br><br>");
+	} else if (hash.feed) {
+		$("#resultLoading").text("Unidentified feed request: " + hash.feed)
+	}
+	if (hash.feed != priorHash.feed) {
+		$('#apiURL').val(url);
+	}
+	// TO DO: Instead show when URL contains {latitude}, etc.  Detect when 
+	if (hash.feed == "seeclickfix-311" || hash.feed == "serp") {
+		$(".autocomplete-container").show();
+	} else {
+		$(".autocomplete-container").hide();
+	}
+
+	let count = 0;
+	let maxcount = 10;
+	// An object containing API Providers and API Keys as key-value pairs
+
+
+	if (hash.feed == priorHash.feed && $("#apiURL").val().length > 0) {
+		url = $("#apiURL").val(); // Since user may have edited
+	} else {
+		$("#apiKey").val("");
+		var aPro = {};
+		if (isValidJSON(localStorage.getItem('aPro'))) {
+			aPro = JSON.parse(localStorage.getItem('aPro')) || {};
+			//console.log("aPro");
+			//console.log(aPro);
+			if (hash.feed == "serp") {
+				let keyValue = getValueFrom("serp",aPro)
+				if (keyValue) {
+					//alert(keyValue)
+					$("#apiKey").val(keyValue);
+				}
+			}
+		}
+	}
+	refreshDisplay(url);
+}
+function refreshDisplay(url) {
+	if(!url) {
+		url = $("#apiURL").val();
+	}
+	if (!urlContainsApiKey(url) && $("#apiKey").val().length) {
+		url = updateAPIKeyInURL(url,$("#apiKey").val()); // The default keyname (api_key) comes from possibleKeyNames array.
+	}
+	if (activeFeed.useCORS) {
+		displayRequestsCorsAnywhere(url);
+	} else {
+		displayJson(url);
+	}
+}
+function displayJson(url){
+	$("#resultJson").hide();
+	$("#resultCascade").hide();
+	$("#resultFull").hide();
+	let hash = getHash();
+  d3.json(url).then(function(json) {
+  	$("#resultJson").html(JSON.stringify(json));
+
+  	const container = document.getElementById('resultCascade');
+    displayData(json, container);
+    $("#resultCascade").show();
+
+    // From localhost
+  	var fullHtml = '';
+  	if (hash.feed == "LandCoverFraction_Forest") { // Limit to list of states
+  		json = json.byVariable.LandCoverFraction_Forest.byEntity;
+  	}
+
+  	//fullHtml += formatRow(b,json[a][b],1); // Resides in localsite.js
+
+  	// Key, Value, Level, Params
+  	fullHtml += formatRow("",json,0); // Resides in localsite.js
+
+  	
+  	//$("#resultJson").show();
+  	
+    //resultFull.innerHTML = fullHtml;
+    $("#resultFull").html(fullHtml);
+    $("#resultFull").show();
+  })
+  // .catch(function(error) {
+	//     //alert(error);
+	//     $("#resultLoading").text(error);
+	//     //$("#resultLoading").text("Error: " + error.message);
+	// });
+}
+function displayRequestsCorsAnywhere(urlItem) {
+	$("#resultFull").hide();
+	$("#resultCascase").hide();
+	let errorOutput;
+  const proxyUrl = 'https://cors-anywhere.herokuapp.com/'; // Use your own proxy if available
+
+  // Handling case when multiple urls with | delimiter
+  urlList = [];
+  urlList = urlItem.split('|')
+  urlList.forEach(url=>{
+	urlCombo = proxyUrl + url;
+  const xhr = new XMLHttpRequest();
+  console.log("proxyUrl: " + proxyUrl);
+  xhr.open("GET", urlCombo, true);
+  
+  xhr.onload = function() {
+  	//alert("onload")
+  	if (xhr.status === 200) {
+        console.log('Success:', xhr.responseText);
+        // Handle the successful response here
+
+				$("#resultFull").show();
+	    	if (url.indexOf("/rss") !== -1) { // RSS FEED = XML HTML Tags
+	      	const rssFeed = xhr.responseText;
+
+	      	// Parse XML
+					const parser = new DOMParser();
+					const xmlDoc = parser.parseFromString(rssFeed, "text/xml");
+
+					// Extract items
+					const items = xmlDoc.getElementsByTagName("item");
+					const formattedItems = [];
+
+					for (let i = 0; i < items.length; i++) {
+					  const item = items[i];
+					  const link = item.querySelector("link").textContent;
+					  const description = item.querySelector("description").textContent;
+					  const pubDate = item.querySelector("pubDate").textContent;
+					  const guid = item.querySelector("guid").textContent;
+					  
+					  formattedItems.push({
+					    link,
+					    description,
+					    pubDate,
+					    guid
+					  });
+					}
+					const formattedRSS = formatRow("",formattedItems,0); // Resides in localsite.js
+				  $("#resultFull").html(formattedRSS);
+
+				} else if (isObject(xhr.responseText) || typeof xhr.responseText == "string") { // serp is a string
+
+					$("#resultJson").html(xhr.responseText);
+			  	//$("#resultJson").show();
+
+					if (typeof xhr.responseText == "string") {
+						let asJson = JSON.parse(xhr.responseText);
+
+						const formattedOutput = formatRow("", asJson, 0); // Resides in localsite.js
+						$("#resultFull").html(formattedOutput);
+						$("#resultFull").show();
+					} else {
+						console.log("Note sure if reached. All xhr.responseText could be a string.")
+						const formattedOutput = formatRow("", xhr.responseText, 0); // Resides in localsite.js
+						$("#resultFull").html(formattedOutput);
+						$("#resultFull").show();
+					}
+					
+
+			  } else {
+          const data = JSON.parse(xhr.responseText);
+          const requestsDiv = document.getElementById('resultFull');
+          alert(data)
+          // if object
+
+          data.forEach(item => {
+              const requestDiv = document.createElement('div');
+
+              if (item.media_url) {
+              	const requestDiv2 = document.createElement('div');
+              	requestDiv2.innerHTML = `<img src="${item.media_url}" style="width:100%;max-width:500px"><br>`
+              	requestsDiv.appendChild(requestDiv2);
+          		}
+              requestDiv.innerHTML = `
+                <h3>${capFirst(item.description)}</h3>
+                <b>Address</b> ${item.address}<br>
+                <b>Latitude</b> ${item.lat}<br>
+                <b>Longitude</b> ${item.long}<br>
+                <b>Service Request ID</b> ${item.service_request_id}<br>
+                <b>Requested Datetime</b> ${item.requested_datetime}<br>
+                <b>Service Code</b> ${item.service_code}<br>
+                <b>Status</b> ${item.status}<br>
+                <b>Zipcode</b> ${item.zipcode}<br>
+                <b>Updated Datetime</b> ${item.updated_datetime}<br>
+                <b>Agency Responsible</b> ${item.agency_responsible}<br>
+                <b>Service Name</b> ${item.service_name}<br>
+                <b>Expected Datetime</b> ${item.expected_datetime}<br>
+                <b>Address ID</b> ${item.address_id}<br>
+                <b>Service Notice</b> ${item.service_notice}<br>
+                <b>Status Notes</b> ${item.status_notes}<br><hr style='border-bottom:1px solid #aaa;margin-top:10px'><br>
+              `;
+              requestsDiv.appendChild(requestDiv);
+          });
+			  }
+    } else {
+    		if (xhr.status === 403) { // CORS - Show link to turn on pass-through
+    			$("#corsLink").show();
+      	}
+        //console.error('Error:', xhr.status, xhr.statusText);
+        errorOutput = 'Error xhr.status ' + xhr.status + ': ' + xhr.statusText;
+    		errorOutput += "<br>Check that you've included an API Key.";
+    		errorOutput += "<br><a href='/localsite/tools/storage/api/' target='editstorage'>Edit your API Keys</a>";
+    }
+    if (errorOutput) {
+		  	$("#resultFull").html(errorOutput);
+		  	$("#resultFull").show();
+		}
+	};
+
+  if(!errorOutput) { // Typically this won't be set at this until after we send to xhr.sent()
+	  xhr.send();
+	}
+  })  
+  
+}
+function capFirst(str, locale=navigator.language) {
+  if (!str) return "";
+  return str.replace(/^\p{CWU}/u, char => char.toLocaleUpperCase(locale));
+}
+function urlContainsApiKey(url) {
+    // List of possible API key parameter names in lowercase
+    const possibleKeyNames = ['api_key', 'apikey', 'key', 'token'];
+
+    // Convert the URL to lowercase to allow case-insensitive matching
+    const lowerCaseUrl = url.toLowerCase();
+
+    // Check if any of the possible key names are in the URL
+    for (const keyName of possibleKeyNames) {
+        // Use a regular expression to search for the keyName in the query string
+        const regex = new RegExp(`[?&]${keyName}=([^&]*)`, 'i');
+        const match = lowerCaseUrl.match(regex);
+        if (match) {
+            // Extract the value of the API key
+            const apiKeyValue = match[1];
+            // Check if the API key value is in brackets or is empty
+            if (apiKeyValue && !apiKeyValue.includes('[')) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+function getValueFrom(key, dataobject) {
+    const lowerKey = key.toLowerCase();
+    for (const objKey in dataobject) {
+        if (objKey.toLowerCase().startsWith(lowerKey)) {
+            return dataobject[objKey];
+        }
+    }
+    return null; // Return null if no match is found
+}
+const possibleKeyNames = ['api_key', 'apikey', 'key', 'token'];
+
+function updateAPIKeyInURL(url, apikey, keyname) {
+  // If keyname is not provided, find a suitable key name from possibleKeyNames
+  if (!keyname) {
+    // Check if any of the possible key names exist in the URL
+    keyname = possibleKeyNames.find(name => url.includes(name));
+  }
+
+  // If no key name is found in the URL, use the first one from possibleKeyNames
+  if (!keyname) {
+    keyname = possibleKeyNames[0];
+  }
+
+  // Regular expression to find and replace the key-value pair
+  const regex = new RegExp(`${keyname}=[^&]*`);
+
+  // Check if the keyname already exists in the URL
+  if (url.match(regex)) {
+    // Replace the existing key-value pair with the new apikey
+    url = url.replace(regex, `${keyname}=${apikey}`);
+  } else {
+    // Append the key-value pair to the URL
+    url += `${url.includes('?') ? '&' : '?'}${keyname}=${apikey}`;
+  }
+
+  return url;
+}
+</script>
+
+</head>
+
+
+<body>
+
+<div class="content contentpadding">
+
+	<div style="float:right; border-left:3px #ccc solid;padding-left:15px"> <a href="../">Feed Player</a><br><a href="/data-commons/docs/jobs/">Data Commons</a></div>
+
+	<!--h1 id="pageTitle"></h1-->
+	<select id="apiFeeds" onchange="goHash({'feed':this.value})"></select>
+
+	<!--link rel="stylesheet" href="location/locationSearchStyles.css" -->
+	
+	<script type="text/javascript" src="location/locationSearch.js"></script>
+
+	<!--
+	TO DO: Isolate the address lookup javascript and return an object containing whatever the lookup fetches. Display to console.log
+	-->
+
+  <div class="autocomplete-container" style="display:none">
+    <input type="text" id="autocomplete-input" placeholder="Location..." class="autocomplete-input textInput" style="min-width:380px;" /><br>
+    <span style="font-size:.9em;">&nbsp;Enter an address, county or zip code.</span><br>
+    <div id="loading" style="display: none;">Loading...</div>
+    <ul id="autocomplete-results" class="autocomplete-results" style="border: 0px !important;"></ul>
+  </div>
+
+	<br>
+
+	<div id="corsLink" style="display:none; margin:12px 0 32px 0">
+		<span style="color:white;background:#444;padding:8px 20px;margin-right:10px">IMPORTANT</span> <a href="https://cors-anywhere.herokuapp.com/" target="passthrough">Turn on CORS passthrough</a> (then refresh this page)
+	</div>
+
+	<div id="pageTitleText" style="margin-top:10px;margin-bottom:12px"></div>
+
+	API URL:<br>
+	<button id="refreshButton" class="btn btn-success" style="float:right;margin-left:8px;">GO</button><div style="overflow:auto;"><input type="text" id="apiURL" class="textInput" style="width:100%;max-width:1000px;" placeholder="API URL" value="" autofocus onfocus="this.select()"></div><br>
+
+	<div id="apiKeyHolder" style="display:none;margin-bottom:12px">
+		Your API Key:<br>
+		<input type="text" id="apiKey" class="textInput" style="width:100%;max-width:300px;" value="" autofocus onfocus="this.select()">
+	</div>
+
+
+	<!--
+	Also see <a href="no-d3.html">$.getJSON</a>
+	-->
+	
+	<div id="relativeRaw" style="position:relative;">
+		<div id="viewRaw" style="position:absolute; right:0px; cursor:pointer; z-index:1;">
+			View Raw Feed
+		</div>
+		<div id="hideRaw" style="display:none;position:absolute; right:0px; cursor:pointer; padding:0 6px; font-size: 18px;z-index:1;">x</div>
+		<div id="resultJson" style="display:none;max-height:200px;overflow-y:scroll;border:1px solid #ccc; padding:10px"></div>
+	</div>
+	
+	<div class="local" style="overflow: auto; display:none">
+    <!-- ITEM LABEL -->
+    <div id="item-label" >
+      <div>
+        Nutrition Facts
+      </div>
+      <div class="item-label-header">
+        <div id="item-name" class="item-name"></div>
+        <div class="quantity-controls">
+          <button id="decrease-quantity" style="display:none">-</button>
+          <input id="quantity-input" style="width:45px" type="number" value="1" min="1" step="1">
+          <button id="increase-quantity" style="display:none">+</button>
+        </div>
+      </div>
+
+      <hr class="thick-line">
+      <div class="serving-size">Amount Per Serving</div>
+      <hr class="thin-line">
+
+      <div id="sections">
+      </div>
+
+      <div id="nutritionFooter" class="footer" style="display:none">
+        <hr class="thick-line">
+        <div class="disclaimer">
+          * The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2000 calories a day is used for general nutrition advice.
+        </div>
+        <div class="ingredients"><strong>INGREDIENTS:</strong> Bleu Cheese Dressing</div>
+      </div>
+    </div><br><br>
+    <!-- /ITEM LABEL -->
+  </div>
+
+	<button id="open-all">Open All</button>
+
+	<!-- for address auto-complete in locationSearch.js -->
+	<div id="requests"></div>
+
+	<!--
+	<div id="resultLoading" style="padding-top: 10px;">Loading..<br></div>
+	-->
+	<div id="resultCascade"></div>
+	<div id="resultFull" style="border-top:1px solid #ccc; margin-top:10px"></div>
+
+
+</div>
+
+
+<script>
+// To try
+var apiKey = 'YOUR_API_KEY_HERE';
+var entities = ['country/USA', 'country/FRA', 'country/DEU'];
+var variables = ['Count_Person'];
+var dates = ['2018', '2019', '2020', '2021', '2022'];
+
+var url = 'https://api.datacommons.org/v2/observation' +
+          '?key=' + apiKey +
+          '&entities=' + entities.join(',') +
+          '&variables=' + variables.join(',') +
+          '&date=' + dates.join(',');
+</script>
+
+<style>
+.node {
+    margin-left: 20px;
+}
+.children {
+    display: none;
+}
+.arrow {
+    cursor: pointer;
+    display: inline-block;
+    margin-right: 5px;
+    transition: transform 0.3s ease;
+}
+.expanded > .arrow {
+    transform: rotate(90deg);
+}
+.truncate {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    max-width: 400px;
+    display: inline-block;
+}
+.array-item {
+    margin-left: 20px;
+}
+</style>
+<script>
+/// NEW
+function isImageUrl(url) {
+        return /\.(jpg|jpeg|png|gif|bmp|svg|webp)$/.test(url);
+    }
+
+    function createNodeElement(key, value, isArrayItem = false) {
+        const container = document.createElement('div');
+        container.className = 'node';
+
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.innerHTML = '&#9654;';
+
+        const content = document.createElement('span');
+
+        if (Array.isArray(value)) {
+            if (!isArrayItem) {
+                content.innerHTML = `<strong>${key}:</strong>`;
+                content.prepend(arrow);
+            }
+
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'children';
+
+            value.forEach((item, index) => {
+                const itemContainer = createNodeElement("", item, true);
+                childrenContainer.appendChild(itemContainer);
+            });
+
+            container.appendChild(content);
+            container.appendChild(childrenContainer);
+
+            arrow.onclick = () => {
+                const isExpanded = container.classList.toggle('expanded');
+                arrow.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+                childrenContainer.style.display = isExpanded ? 'block' : 'none';
+                if (isExpanded) {
+                    openNestedSections(childrenContainer);
+                } else {
+                    closeNestedSections(childrenContainer);
+                }
+            };
+
+            if (!isArrayItem) {
+                // Attach the event handler only if it's not an array item
+                container.appendChild(content);
+                container.appendChild(childrenContainer);
+            }
+        } else if (typeof value === 'object' && value !== null) {
+            content.innerHTML = `<strong>${key}:</strong>`;
+            content.prepend(arrow);
+
+            const childrenContainer = document.createElement('div');
+            childrenContainer.className = 'children';
+
+            for (const [childKey, childValue] of Object.entries(value)) {
+                childrenContainer.appendChild(createNodeElement(childKey, childValue));
+            }
+
+            container.appendChild(content);
+            container.appendChild(childrenContainer);
+
+            content.onclick = () => {
+                const isExpanded = container.classList.toggle('expanded');
+                arrow.style.transform = isExpanded ? 'rotate(90deg)' : 'rotate(0deg)';
+                childrenContainer.style.display = isExpanded ? 'block' : 'none';
+                if (isExpanded) {
+                    openNestedSections(childrenContainer);
+                } else {
+                    closeNestedSections(childrenContainer);
+                }
+            };
+        } else {
+            if (isArrayItem) {
+                content.innerHTML = `${value}`;
+                content.prepend(arrow);
+            } else {
+                if (isImageUrl(value)) {
+                    content.innerHTML = `<strong>${key}:</strong> <img src="${value}" alt="${key}" style="max-width: 100px;">`;
+                } else if (typeof value === 'string' && value.startsWith('http')) {
+                    content.innerHTML = `<strong>${key}:</strong> <a href="${value}" target="_blank" class="truncate">${value}</a>`;
+                } else {
+                    content.innerHTML = `<strong>${key}:</strong> ${value}`;
+                }
+            }
+            container.appendChild(content);
+        }
+
+        return container;
+    }
+
+    function openNestedSections(container) {
+        const childNodes = container.querySelectorAll('.node');
+        childNodes.forEach(node => {
+            const arrow = node.querySelector('.arrow');
+            node.classList.add('expanded');
+            const children = node.querySelector('.children');
+            if (children) {
+                children.style.display = 'block';
+                arrow.style.transform = 'rotate(90deg)';
+            }
+        });
+    }
+
+    function closeNestedSections(container) {
+        const childNodes = container.querySelectorAll('.node');
+        childNodes.forEach(node => {
+            const arrow = node.querySelector('.arrow');
+            node.classList.remove('expanded');
+            const children = node.querySelector('.children');
+            if (children) {
+                children.style.display = 'none';
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        });
+    }
+
+    function displayData(data, container) {
+        container.innerHTML = '';
+        for (const [key, value] of Object.entries(data)) {
+            container.appendChild(createNodeElement(key, value));
+        }
+    }
+
+    function openAll() {
+        const nodes = document.querySelectorAll('.node');
+        nodes.forEach(node => {
+            node.classList.add('expanded');
+            const arrow = node.querySelector('.arrow');
+            const children = node.querySelector('.children');
+            if (children) {
+                children.style.display = 'block';
+                arrow.style.transform = 'rotate(90deg)';
+            }
+        });
+    }
+
+    document.getElementById('open-all').addEventListener('click', openAll);
+</script>
+</body>
+</html>

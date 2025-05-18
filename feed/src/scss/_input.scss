@@ -1,0 +1,44 @@
+@import "./variables";
+
+@mixin customize-range-input($height) {
+  .range-input {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    cursor: pointer;
+    outline: none;
+    overflow: hidden;
+    border-radius: calc($height / 2);
+  }
+
+  .range-input::-webkit-slider-runnable-track {
+    height: $height;
+    background: #ccc;
+    border-radius: calc($height / 2);
+  }
+
+  .range-input::-moz-range-track {
+    height: $height;
+    background: #ccc;
+    border-radius: calc($height / 2);
+  }
+
+  .range-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 0px;
+    aspect-ratio: 1;
+    background-color: $accent-clr;
+    border-radius: 50%;
+    box-shadow: -404px 0 0 400px $accent-clr;
+  }
+
+  .range-input::-moz-range-thumb {
+    height: 0;
+    aspect-ratio: 1;
+    background-color: #fff;
+    border-radius: 50%;
+    border: 1px solid $accent-clr;
+    box-shadow: -407px 0 0 400px $accent-clr;
+  }
+}

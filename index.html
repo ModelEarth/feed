@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" sizes="32x32" href="favicons/favicon-32x32.png" />
-    <title>Feed Player - For Images, Video and Text</title>
+    <title>Feed Player</title>
     <script type="text/javascript" src="https://model.earth/localsite/js/localsite.js?showheader=true"></script>
     <script type="module" crossorigin src="dist/assets/feedplayer.js"></script>
     <link rel="stylesheet" crossorigin href="dist/assets/feedplayer.css" />
@@ -55,12 +55,7 @@
       <a href="https://github.com/ModelEarth/feed/"><img src="../localsite/img/icon/github/github.png" alt="github icon" style="width:42px"></a>
     </div>
 
-    <div id="root">
-      <img src="src/assets/images/intro-a.jpg" alt="img" style="border-radius: 20px" />
-      <div style="margin-top: 20px; z-index: 1000">
-        Broken by build. Manually update the index .js and .css files to include the newly built ID values.
-      </div>
-    </div>
+    <div id="root"></div>
 
     <object type="text/html" class="swiper-filmstrip" data="/swiper/dist/loop.html" scrolling="no" title="Nasa API Filmstrip Swiper"></object>
     <object type="text/html" class="swiper-section" data="/swiper/dist/feedmain.html" scrolling="no" title="Nasa API Default Swiper"></object>
@@ -69,82 +64,6 @@
       <div id="readmeDiv"></div>
     </div>
 
-    <script>
-      const allowedOrigins = [
-        "https://model.earth",
-        "https://shreyaspatil2000.github.io",
-        "http://localhost:8887",
-        "http://localhost:5173",
-      ];
-
-      function showActiveSwiper() {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const swiperType = hashParams.get("swiper") || "default";
-        const filmstrip = document.querySelector(".swiper-filmstrip");
-        const section = document.querySelector(".swiper-section");
-        if (swiperType === "filmstrip") {
-          filmstrip.style.display = "block";
-          section.style.display = "none";
-        } else {
-          filmstrip.style.display = "none";
-          section.style.display = "block";
-        }
-      }
-
-      // Function to handle hash changes
-      function handleHashChange() {
-        const hashParams = new URLSearchParams(window.location.hash.substring(1));
-        const scene = parseInt(hashParams.get("scene"), 10);
-        const swiperType = hashParams.get("swiper") || "default";
-        showActiveSwiper();
-        if (scene > 0 && scene <= 18) {
-          const activeSwiper = document.querySelector(
-            swiperType === "filmstrip" ? ".swiper-filmstrip" : ".swiper-section"
-          );
-          if (activeSwiper && activeSwiper.contentWindow) {
-            activeSwiper.contentWindow.postMessage({ action: "changeSlide", scene: scene }, "*");
-          }
-        }
-      }
-
-      // Function to handle messages from the iframe
-      function handleMessage(event) {
-        if (allowedOrigins.includes(event.origin)) {
-          const { index, url, title, explanation, mediaType, source } = event.data;
-          console.log("url: " + url + " , title: " + title + " , explanation: " + explanation + ", mediaType: " + mediaType);
-          if ((source === "loop" || source === "feedmain") && !isNaN(index) && index > 0 && index <= 18) {
-            sessionStorage.setItem("swiperMedia", JSON.stringify({ url: url, text: explanation, title: title, mediaType: mediaType }));
-            window.dispatchEvent(new Event('sessionStorageChange'));
-            const hashParams = new URLSearchParams(window.location.hash.substring(1));
-            const currentSwiperType = hashParams.get("swiper") || "default";
-            history.replaceState(null, null, `#swiper=${currentSwiperType}&feed=nasa&scene=${index}`);
-          }
-        }
-      }
-
-      window.onload = () => {
-        const navigationType = performance.getEntriesByType("navigation")[0].type;
-        if (navigationType === "reload") {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const currentSwiperType = hashParams.get("swiper");
-          if (currentSwiperType) history.replaceState(null, null, `#swiper=${currentSwiperType}`);
-          else history.replaceState(null, null, " ");
-        }
-        showActiveSwiper();
-      };
-
-      // Set up event listeners
-      function init() {
-        window.addEventListener("hashchange", handleHashChange);
-        window.addEventListener("message", handleMessage);
-        window.addEventListener("beforeunload", cleanup);
-      }
-      function cleanup() {
-        window.removeEventListener("hashchange", handleHashChange);
-        window.removeEventListener("message", handleMessage);
-        window.removeEventListener("beforeunload", cleanup);
-      }
-      init();
-    </script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

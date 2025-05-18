@@ -1,0 +1,57 @@
+/* Container for the autocomplete component */
+.autocomplete-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+/* Input field for search */
+.autocomplete-input {
+    width: 100%;
+    padding: 10px 20px;
+    box-sizing: border-box;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.autocomplete-input:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+/* Container for the dropdown results */
+.autocomplete-results {
+    position: absolute;
+    width: 100%;
+    border: 1px solid #ccc;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: red;
+    z-index: 1000;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Individual item in the dropdown results */
+.autocomplete-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item-highlighted {
+    background-color: #f0f0f0;
+}
+
+/* Loading spinner */
+#loading {
+    display: none;
+    padding: 10px 0;
+    font-size: 14px;
+    color: #007bff;
+}
