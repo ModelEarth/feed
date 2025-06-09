@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 
 // Components
-import VideoPlayer from "./VideoPlayer/VideoPlayer";
 import MemberSense from "./components/MemberSenseComponents/MemberSenseLogin/MemberSense";
 import MemberShowcase from "./components/MemberSenseComponents/MemberShowcase/MemberShowcase";
 import DiscordChannelViewer from "./components/MemberSenseComponents/DiscordChannelViewer/DiscordChannelViewer";
+import VideoPlayer from "./components/VideoPlayer/VideoPlayer";
 
 // Context
 import ContextProvider from "./Context/ContextGoogle";

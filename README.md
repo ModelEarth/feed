@@ -47,9 +47,9 @@ DONE: Add columns for Title and Description in the Google Sheet - Matt B
 Let's revisit this for a modile orienation.
 DONE: Aspect ratio of video remains the same when showing landscape image.--><!--To prevent the video height from jumping short briefly: When setCurrentVideoSrc is called to advance the video, insert the current height until the next video loads. Remove the inserted height once the new slide video/image loads into the DOM. (The last video is an example with a different aspect ratio.)-->
 
-7.) TO DO: When reloading retain feed's hash in the URL, and display that feed.
+7.) DONE: When reloading retain feed's hash in the URL, and display that feed.
 To see bug, hit refresh for the following or load the link directly: 
-[Hash example for SeeClickFix](#feed=seeclickfix-311) - the hash values currently disappear when reloading.
+[Hash example for SeeClickFix](#feed=seeclickfix-311) - the hash values currently disappear when reloading. - [Rodrigo](https://github.com/devrodrigorpm)
 
 8.) DONE: Load images into the FeedPlayer from our [pull from Github](../home/repo/). - Chethan
 

@@ -111,7 +111,6 @@
       function handleMessage(event) {
         if (allowedOrigins.includes(event.origin)) {
           const { index, url, title, explanation, mediaType, source } = event.data;
-          console.log("url: " + url + " , title: " + title + " , explanation: " + explanation + ", mediaType: " + mediaType);
           if ((source === "loop" || source === "feedmain") && !isNaN(index) && index > 0 && index <= 18) {
             sessionStorage.setItem("swiperMedia", JSON.stringify({ url: url, text: explanation, title: title, mediaType: mediaType }));
             window.dispatchEvent(new Event('sessionStorageChange'));
@@ -126,9 +125,13 @@
         const navigationType = performance.getEntriesByType("navigation")[0].type;
         if (navigationType === "reload") {
           const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          const currentSwiperType = hashParams.get("swiper");
-          if (currentSwiperType) history.replaceState(null, null, `#swiper=${currentSwiperType}`);
-          else history.replaceState(null, null, " ");
+          if (
+            hashParams.has("swiper") &&
+            [...hashParams.keys()].length === 1
+          ) {
+            const currentSwiperType = hashParams.get("swiper");
+            history.replaceState(null, null, `#swiper=${currentSwiperType}`);
+          }
         }
         showActiveSwiper();
       };
