@@ -7,6 +7,7 @@ import PropTypes from "prop-types";
 import { FaChevronUp, FaChevronDown, FaPlay, FaPause } from "react-icons/fa";
 import Popup from "../Popup/Popup";
 import Papa from "papaparse";
+import TeamGallery from "../TeamGallery/TeamGallery";
 
 function VideoPlayer({
   autoplay = false,
@@ -72,6 +73,7 @@ function VideoPlayer({
   const imageRef = useRef(null); // 24
   const [isTallImage, setIsTallImage] = useState(false); // 25
   const [videoData, setVideoData] = useState(null); // 26
+  const [hideControls, setHideControls] = useState(false); // 27
 
   const imageDuration = 4;
 
@@ -302,6 +304,19 @@ function VideoPlayer({
     }
   }, [mediaList]);
 
+  // Hide/show controls based on current media type
+  useEffect(() => {
+    const isTeamFeed = currentMedia?.mediaType === "team" || 
+                      activeFeed?.toLowerCase() === "modelteam";
+    setHideControls(isTeamFeed);
+    
+    if (isTeamFeed) {
+      console.log('🎭 Team gallery mode: Controls hidden');
+    } else {
+      console.log('🎥 Media player mode: Controls visible');
+    }
+  }, [currentMedia, activeFeed]);
+
   const processMediaList = async () => {
     setIsLoading(true);
     const templistofMedia = {};
@@ -422,6 +437,57 @@ function VideoPlayer({
           title: videoData.title,
         };
       }
+      
+      // Handle Model Earth Team feed before making HTTP request
+      if (media.feed.trim().toLowerCase() === "modelteam") {
+        console.log('🔄 Fetching team data from CSV URL:', media.url);
+        
+        // Fetch team data directly from CSV URL (Google Sheet)
+        const csvResponse = await axios.get(media.url);
+        return new Promise((resolve, reject) => {
+          Papa.parse(csvResponse.data, {
+            header: true,
+            complete: (results) => {
+              const teamMembers = results.data
+                .filter((row) => row.Name && row.Name.trim()) // Filter out empty rows
+                .map((row, index) => ({
+                  url: null,
+                  text: `${row.Team || 'Team Member'} • ${row.Location || 'Location TBD'}\nProjects: ${row.Projects || 'No projects listed'}\nStatus: ${row.Status || 'Unknown'}`,
+                  title: row.Name,
+                  mediaType: "team",
+                  memberData: {
+                    id: index + 1,
+                    name: row.Name,
+                    title: row.Team ? row.Team.split(',')[0].trim() : 'Team Member', // Use first team as title
+                    location: row.Location || 'Location TBD',
+                    projects: row.Projects ? row.Projects.split(',').map(p => p.trim()) : [],
+                    teams: row.Team ? row.Team.split(',').map(t => t.trim()).filter(t => t) : [], // All teams
+                    availability: row.Status || 'Unknown',
+                    avatar: row.Name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2),
+                    skills: [], // No skills in CSV
+                    rating: 0,
+                    projectCount: row.Projects ? row.Projects.split(',').length : 0,
+                    description: `${row.Team ? row.Team.split(',')[0].trim() : 'Team Member'} based in ${row.Location || 'remote location'}`
+                  },
+                  name: row.Name,
+                  team: row.Team,
+                  teams: row.Team ? row.Team.split(',').map(t => t.trim()).filter(t => t) : [], // All teams as array
+                  projects: row.Projects ? row.Projects.split(',').map(p => p.trim()) : [],
+                  status: row.Status,
+                  location: row.Location,
+                  avatar: row.Name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)
+                }));
+              console.log('✅ Parsed team members from CSV:', teamMembers.length, 'members');
+              resolve(teamMembers);
+            },
+            error: (error) => {
+              console.error('❌ CSV parsing error:', error);
+              reject(error);
+            }
+          });
+        });
+      }
+      
       const response = await axios.get(media.url);
       switch (media.feed.trim().toLowerCase()) {
         case "seeclickfix-311":
@@ -568,6 +634,10 @@ function VideoPlayer({
       src &&
       videoExtensions.some((extension) => src.toLowerCase().endsWith(extension))
     );
+  };
+
+  const isTeamGallery = (media) => {
+    return media && media.mediaType === "team";
   };
 
   const handlePlayPause = () => {
@@ -916,6 +986,13 @@ function VideoPlayer({
             <div className="spinner"></div>
             <p>Loading media...</p>
           </div>
+        ) : currentMedia && isTeamGallery(currentMedia) ? (
+          <TeamGallery
+            teamMembers={selectedMediaList}
+            currentIndex={currentMediaIndex}
+            onMemberChange={setCurrentMediaIndex}
+            isFullScreen={isFullScreen}
+          />
         ) : currentMedia && currentMedia.isError ? (
           <div
             className="VideoPlayer__error"
@@ -1024,7 +1101,7 @@ function VideoPlayer({
             />
           </div>
         )}
-        {selectedMediaList.length > 1 && (
+        {selectedMediaList.length > 1 && !hideControls && (
           <div
             className="VideoPlayer__progress-bg"
             onClick={(event) => handleProgressBarClick(event)}
@@ -1070,7 +1147,7 @@ function VideoPlayer({
             )}
           </div>
         )}
-        {!isLoading && currentMedia && (
+        {!isLoading && currentMedia && !isTeamGallery(currentMedia) && (
           <div
             className={`VideoPlayer__overlay ${
               isExpanded ? "expanded-overlay" : ""
@@ -1153,7 +1230,7 @@ function VideoPlayer({
           </div>
         )}
       </div>
-      <div className="VideoPlayer__controls">
+      <div className={`VideoPlayer__controls ${hideControls ? 'hidden' : ''}`}>
         <div className="control-group control-group-btn">
           <button className="control-button prev" onClick={handlePrev}>
             <i className="ri-skip-back-fill icon"></i>
