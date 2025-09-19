@@ -23,11 +23,11 @@
     padding: 20px;
   }
 
-  // Close X button positioned in upper right
-  .member-showcase-close-btn {
+  // Back button positioned in upper left
+  .member-showcase-back-btn {
     position: absolute;
     top: 16px;
-    right: 16px;
+    left: 16px;
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: 50%;
@@ -39,7 +39,6 @@
     cursor: pointer;
     z-index: 10;
     color: #666;
-    font-size: 16px;
     transition: all 0.2s ease;
 
     &:hover {

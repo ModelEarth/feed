@@ -2,7 +2,7 @@
 /* eslint-disable react/prop-types */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronLeft, ChevronRight, Mail, ExternalLink, X, Pause, Play } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Mail, ExternalLink, ArrowLeft, Pause, Play } from "lucide-react";
 import "./MemberShowcase.scss";
 
 // Card component to display individual member information
@@ -155,10 +155,10 @@ const MemberShowcase = ({ members, isFullScreen, onClose }) => {
 
   return (
     <div className={`member-showcase ${isFullScreen ? "fullscreen" : ""}`}>
-      {/* Close X button in upper right */}
+      {/* Back arrow button in upper left */}
       {onClose && (
-        <button className="member-showcase-close-btn" onClick={onClose}>
-          <X size={18} />
+        <button className="member-showcase-back-btn" onClick={onClose}>
+          <ArrowLeft size={18} />
         </button>
       )}
       

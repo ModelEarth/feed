@@ -2240,12 +2240,18 @@ function FeedPlayer({
                       onChannelSelect={memberSenseProps.setSelectedChannel}
                       isLoading={memberSenseProps.isLoading}
                       isFullScreen={false}
+                      onClose={() => {
+                        if (memberSenseProps.setSidePanelView) {
+                          memberSenseProps.setSidePanelView(null);
+                        }
+                      }}
                     />
                   </div>
                 ) : (
                   <div className="member-sense-wrapper">
                     <MemberSense
                       onValidToken={memberSenseProps.onValidToken}
+                      onLogout={memberSenseProps.onLogout}
                       initialToken={memberSenseProps.initialToken}
                       isLoading={memberSenseProps.isLoading}
                       error={memberSenseProps.error}

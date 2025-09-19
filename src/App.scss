@@ -481,13 +481,14 @@
     
     // Right column - narrower, contains main MemberSense content
     .membersense-right-column {
-      flex: 1;
+      flex: 1.5; // Increased from 1 to 1.5 for more space
       display: flex;
       flex-direction: column;
       position: relative;
       background: rgba(255, 255, 255, 0.98);
       border-left: 1px solid rgba(0, 0, 0, 0.1);
       overflow-y: auto;
+      min-width: 400px; // Ensure minimum width for content
     }
     
     // When narrow screen - show only right column at 100% width
@@ -678,21 +679,27 @@
     .membersense-overlay-content {
       height: 100%;
       box-sizing: border-box;
-      flex: 1;
       position: relative; // Enable absolute positioning for close button
       
       // Override the normal MemberSense container styles for overlay
       .member-sense-wrapper {
         height: 100%;
-        padding: 0;
+        padding: 24px;
         position: relative; // Enable absolute positioning for close button within wrapper
-        
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        justify-content: flex-start;
+        overflow-y: auto;
+
         .member-sense-container {
           max-width: none;
           width: 100%;
           margin: 0;
-          padding: 0;
+          padding: 5px;
           border: none;
+          display: flex;
+          flex-direction: column;
           
           .member-sense-title {
             font-size: 1.5rem;

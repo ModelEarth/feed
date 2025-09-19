@@ -28,6 +28,7 @@ const DISCORD_BOT_TOKEN = import.meta.env.VITE_DISCORD_BOT_TOKEN;
  */
 const MemberSense = ({
   onValidToken,
+  onLogout,
   initialToken,
   isLoading: parentLoading,
   error,
@@ -46,6 +47,7 @@ const MemberSense = ({
   const [validationMessage, setValidationMessage] = useState(null);
   const [serverInfo, setServerInfo] = useState(initialServerInfo);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [showTokenForm, setShowTokenForm] = useState(false); // New state to control token form visibility
 
   /**
    * Handles initial token and server info setup
@@ -58,9 +60,8 @@ const MemberSense = ({
       setIsTransitioning(true);
       setTimeout(() => setIsTransitioning(false), 300);
     } else {
-      // Try auto-login with backend token first
-      console.log("Attempting auto-login with backend token");
-      setTimeout(() => handleTokenSubmit(), 100);
+      // Don't auto-login, show welcome screen first
+      console.log("Showing welcome screen");
     }
     
     if (false) { // Keep this block for reference but disable it
@@ -100,6 +101,7 @@ const MemberSense = ({
       if (success === "mock") {
         console.log("Using sample Discord data");
         setIsTransitioning(true);
+        setShowTokenForm(false);
         setTimeout(() => {
           setValidationMessage({
             type: "success",
@@ -110,6 +112,7 @@ const MemberSense = ({
       } else if (success) {
         console.log("Token validated successfully");
         setIsTransitioning(true);
+        setShowTokenForm(false);
         setTimeout(() => {
           setValidationMessage({
             type: "success",
@@ -201,22 +204,87 @@ const MemberSense = ({
       ) : (
         <Server size={48} className="server-icon" />
       )} */}
-      <h3 className="server-name">Welcome to {serverInfo.serverName}!</h3>
+      <h3 className="server-name">Welcome to {serverInfo?.serverName || "Sample Discord Team"}!</h3>
       <p className="server-message">
         You&apos;re all set to explore MemberSense features. Use the buttons to access Member Showcase and
         Discord Viewer.
       </p>
       <div className="server-details">
-        {serverInfo.memberCount && (
-          <p className="member-count">
-            <Users size={20} />
-            {serverInfo.memberCount} members
-          </p>
-        )}
+        <p className="member-count">
+          <Users size={20} />
+          {serverInfo?.memberCount || 100} members
+        </p>
       </div>
       <div className="navigation-buttons">
         <button className="nav-button" onClick={() => handleViewChange("Showcase")} title="Show All Members">Members</button>
         <button className="nav-button" onClick={() => handleViewChange("DiscordViewer")} title="View Discord Channels">Posts</button>
+        {(useMockData || !serverInfo) && (
+          <button
+            className="nav-button view-discord-btn"
+            onClick={() => setShowTokenForm(true)}
+            title="Connect to Discord"
+          >
+            Connect Discord
+          </button>
+        )}
+        {!useMockData && serverInfo && onLogout && (
+          <button
+            className="nav-button logout-btn"
+            onClick={onLogout}
+            title="Disconnect from Discord"
+          >
+            Logout
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  const renderTokenContent = () => (
+    <div className="token-content">
+      {!serverInfo && (
+        <div className="token-info">
+          <a
+            href="https://github.com/ModelEarth/feed/blob/main/membersense/README.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="token-link"
+          >
+            How to Get My Team&apos;s Token?
+          </a>
+          
+        </div>
+      )}
+
+      {renderTokenForm()}
+
+      <div className="support-sections">
+        <div className="permissions-info">
+          <h4>Required Bot Permissions:</h4>
+          <ul>
+            <li>View Channels</li>
+            <li>View Server Insights</li>
+            <li>Send Messages</li>
+            <li>Read Message History</li>
+          </ul>
+        </div>
+
+        <div className="troubleshooting-guide">
+          <h4>Troubleshooting Steps:</h4>
+          <ol>
+            <li>
+              <strong>Regenerate Discord Bot Token:</strong>
+              <ul>
+                <li>
+                  Go to <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer">https://discord.com/developers/applications</a>
+                </li>
+                <li>Select your Discord application</li>
+                <li>Go to "Bot" section</li>
+                <li>Click "Reset Token" and copy the new token</li>
+              </ul>
+            </li>
+          </ol>
+        </div>
       </div>
     </div>
   );
@@ -226,41 +294,14 @@ const MemberSense = ({
       <div className={`member-sense-container ${isTransitioning ? "transitioning" : ""}`}>
         <h1 className="member-sense-title">MemberSense</h1>
 
-        {!serverInfo && (!useMockData || validationMessage?.type === "error") && (
-          <>
-            <div className="token-info">
-              <a
-                href="https://github.com/ModelEarth/feed/blob/main/membersense/README.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="token-link"
-              >
-                How to Get My Team&apos;s Token?
-              </a>
-              <div className="token-info token-link" onClick={handleSampleDiscord}>
-                View Sample Discord Team and Posts
-              </div>
-            </div>
-            <div className="permissions-info">
-              <h4>Required Bot Permissions:</h4>
-              <ul>
-                <li>View Channels</li>
-                <li>View Server Insights</li>
-                <li>Send Messages</li>
-                <li>Read Message History</li>
-              </ul>
-            </div>
-          </>
-        )}
-
         {/* {!isLoggedIn && renderDataModeToggle()} */}
-        {parentLoading ? (
+        {parentLoading && showTokenForm ? (
           <div className="loading-container">
             <Spinner />
           </div>
         ) : (
           <>
-            {serverInfo ? renderServerInfo() : renderTokenForm()}
+            {showTokenForm ? renderTokenContent() : renderServerInfo()}
 
             {(validationMessage || error) && (
               <>
@@ -272,23 +313,6 @@ const MemberSense = ({
                   )}
                   {validationMessage?.text || error}
                 </div>
-                
-                {(validationMessage?.type === "error" || error) && (
-                  <div className="troubleshooting-steps">
-                    <h4>Troubleshooting Steps:</h4>
-                    <ol>
-                      <li>
-                        <strong>Regenerate Discord Bot Token:</strong>
-                        <ul>
-                          <li>Go to <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer">https://discord.com/developers/applications</a></li>
-                          <li>Select your Discord application</li>
-                          <li>Go to "Bot" section</li>
-                          <li>Click "Reset Token" and copy the new token</li>
-                        </ul>
-                      </li>
-                    </ol>
-                  </div>
-                )}
               </>
             )}
           </>

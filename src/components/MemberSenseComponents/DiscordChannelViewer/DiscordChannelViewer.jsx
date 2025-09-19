@@ -2,7 +2,7 @@
 /* eslint-disable no-unused-vars */
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { MessageCircle, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { MessageCircle, ChevronDown, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import "./DiscordChannelViewer.scss";
 
 /**
@@ -29,33 +29,16 @@ const ChannelName = ({ name, maxLength }) => (
  * @param {boolean} props.isLoading - Loading state indicator
  * @param {boolean} props.isFullScreen - Fullscreen display mode
  */
-const DiscordChannelViewer = ({ channels, messages, selectedChannel, onChannelSelect, isLoading, isFullScreen }) => {
+const DiscordChannelViewer = ({ channels, messages, selectedChannel, onChannelSelect, isLoading, isFullScreen, onClose }) => {
   // State Management
   const [currentPage, setCurrentPage] = useState(1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Refs for DOM manipulation
   const dropdownRef = useRef(null);
-  const containerRef = useRef(null);
 
   // Constants
   const MESSAGES_PER_PAGE = 10;
-
-  /**
-   * Adjusts container styles based on fullscreen state
-   */
-  useEffect(() => {
-    if (containerRef.current) {
-      const styles = {
-        height: isFullScreen ? "100vh" : "80vh",
-        width: isFullScreen ? "100vw" : "100vh",
-        maxWidth: isFullScreen ? "none" : "800px",
-        margin: isFullScreen ? "0" : "20px auto",
-        borderRadius: isFullScreen ? "0" : "12px",
-      };
-      Object.assign(containerRef.current.style, styles);
-    }
-  }, [isFullScreen]);
 
   /**
    * Handles clicks outside the dropdown to close it
@@ -177,10 +160,15 @@ const DiscordChannelViewer = ({ channels, messages, selectedChannel, onChannelSe
   return (
     <motion.div
       className={`discord-channel-viewer ${isFullScreen ? "fullscreen" : ""}`}
-      ref={containerRef}
       variants={fullScreenVariants}
       animate={isFullScreen ? "fullScreen" : "normal"}
     >
+      {onClose && (
+        <button className="discord-viewer-back-btn" onClick={onClose}>
+          <ArrowLeft size={18} />
+        </button>
+      )}
+
       <nav className="app-nav">{renderChannelDropdown()}</nav>
 
       <main className="app-content">

@@ -58,7 +58,7 @@ function App() {
   const [sidePanelExpanded, setSidePanelExpanded] = useState(false);
 
   // UI state
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const appRef = useRef(null);
   const [selectedOption, setSelectedOption] = useState("");
@@ -364,20 +364,20 @@ function App() {
     }
 
     try {
-      // Try auto-login first (uses backend token), then manual if inputToken provided
-      const endpoint = inputToken ? 'api/auth/login' : 'api/auth/auto-login';
-      const body = inputToken ? JSON.stringify({ token: inputToken }) : JSON.stringify({});
-      
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      if (!inputToken) {
+        throw new Error("Discord bot token required");
+      }
+
+      const response = await fetch(`${API_BASE_URL}api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: body,
+        body: JSON.stringify({ token: inputToken }),
       });
 
       if (!response.ok) throw new Error("Login failed");
 
       const data = await response.json();
-      setToken(inputToken || 'backend-token'); // Don't expose actual token
+      setToken('user-provided-token'); // Don't expose actual token
       setSessionId(data.sessionId);
       setServerInfo({
         serverName: data.serverName,
@@ -450,24 +450,16 @@ function App() {
       window.location.hash = '#members=discord';
       setSidePanelView(view); // Set which Discord content to show in left panel
       
-      // Load data if not already loaded
-      if (sessionId && members.length === 0 && !useMockData) {
-        setIsLoading(true);
-        Promise.all([fetchMembers(sessionId), fetchChannels(sessionId)])
-          .then(([membersData, channelsData]) => {
-            setMembers(membersData);
-            setChannels(channelsData);
-            if (channelsData.length > 0 && !selectedChannel) {
-              setSelectedChannel(channelsData[0].id);
-            }
-          })
-          .catch((error) => {
-            console.error("Error loading Discord data:", error);
-            setError("Failed to load Discord data");
-          })
-          .finally(() => {
-            setIsLoading(false);
-          });
+      // Load mock data for welcome screen usage
+      if (members.length === 0) {
+        setUseMockData(true);
+        const fakeMembers = fetchFakeMembers();
+        const fakeChannels = fetchFakeChannels();
+        setMembers(fakeMembers);
+        setChannels(fakeChannels);
+        if (fakeChannels.length > 0 && !selectedChannel) {
+          setSelectedChannel(fakeChannels[0].id);
+        }
       }
     } else if (view === "MemberSense") {
       // Show MemberSense overlay instead of switching views
@@ -538,6 +530,7 @@ function App() {
               setShowMemberSenseOverlay={setShowMemberSenseOverlay}
               memberSenseProps={{
                 onValidToken: handleLogin,
+                onLogout: handleLogout,
                 initialToken: token,
                 isLoading: isLoading,
                 error: error,
@@ -569,6 +562,7 @@ function App() {
         return (
           <MemberSense
             onValidToken={handleLogin}
+            onLogout={handleLogout}
             initialToken={token}
             isLoading={isLoading}
             error={error}
