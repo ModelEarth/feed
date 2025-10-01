@@ -772,7 +772,36 @@ function FeedPlayer({
         }
       }
       
-      const response = await axios.get(media.url);
+      // Build optional fallback URL for products-* lists if URL missing or invalid
+      const feedCountryFromName = (name) => {
+        try {
+          const parts = name.split('products-');
+          if (parts.length < 2) return null;
+          const countrySlug = parts[1].trim().toLowerCase();
+          const map = { india: 'IN' };
+          return map[countrySlug] || null;
+        } catch (_) {
+          return null;
+        }
+      };
+
+      // For products-* feeds, prefer the canonical GitHub CSV regardless of the sheet URL
+      let response;
+      if (feedName.startsWith('products-')) {
+        const cc = feedCountryFromName(feedName);
+        if (cc) {
+          const fallbackUrl = `https://raw.githubusercontent.com/Sirishaupadhyayula/products-data/refs/heads/main/${cc}.csv`;
+          console.log(`[FeedPlayer] Using products fallback URL for '${feedName}':`, fallbackUrl);
+          response = await axios.get(fallbackUrl);
+        } else {
+          // If we can't determine country code, try the media URL
+          response = await axios.get(media.url);
+        }
+      } else {
+        // Non-products feeds: use provided URL
+        response = await axios.get(media.url);
+      }
+      console.log(`[FeedPlayer] Fetched feed '${feedName}' from URL:`, (response && response.config && response.config.url) || media.url, 'type:', typeof response?.data);
       switch (feedName) {
         case "seeclickfix-311":
           return response.data.issues.map((item) => ({
@@ -838,12 +867,22 @@ function FeedPlayer({
                 header: true,
                 complete: (results) => {
                   let mediaItems = [];
+                  const isProductsList = feedName.startsWith('products-');
+                  const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                  const searchParam = (hashParams.get('search') || '').toLowerCase();
+                  const catParam = (hashParams.get('cat') || '').toLowerCase();
+                  try {
+                    console.log(`[FeedPlayer] CSV parsed for '${feedName}': rows=`, results?.data?.length || 0, 'feedFields=', media.feedFields || '(none)', 'isProductsList=', isProductsList);
+                    if (results?.data && results.data[0]) {
+                      console.log('[FeedPlayer] Sample row keys:', Object.keys(results.data[0]).slice(0, 12));
+                    }
+                  } catch (e) {}
                   
                   // Use feedFields if available to determine which columns to display
                   if (media.feedFields && media.feedFields.trim()) {
                     const fieldNames = media.feedFields.split(',').map(field => field.trim());
                     mediaItems = results.data
-                      .filter((item) => Object.values(item).some(value => value && value.trim())) // Filter out completely empty rows
+                      .filter((item) => Object.values(item).some(value => value && String(value).trim())) // Filter out completely empty rows
                       .map((item, index) => {
                         // Create a display object using the specified fields
                         const displayData = {};
@@ -853,10 +892,23 @@ function FeedPlayer({
                           }
                         });
                         
-                        // Only include items with valid image URLs
+                        // Only include items with valid image URLs; for products lists, allow text-only
                         const imageUrl = item.url || item.hdurl;
-                        if (!imageUrl || !imageUrl.startsWith('http')) {
-                          return null; // Skip invalid entries
+                        if (!imageUrl || !String(imageUrl).startsWith('http')) {
+                          if (isProductsList) {
+                            const titleCandidate = item.Name || item.Product || item.title || item[fieldNames[0]] || `Item ${index + 1}`;
+                            const textLines = Object.entries(displayData).map(([key, value]) => `${key}: ${value}`);
+                            const text = textLines.length > 0 ? textLines.join('\n') : 'No data available';
+                            return {
+                              url: null,
+                              text,
+                              title: titleCandidate,
+                              type: 'products',
+                              rawData: item,
+                              displayFields: displayData
+                            };
+                          }
+                          return null; // Skip invalid entries for non-products
                         }
                         
                         return {
@@ -870,13 +922,80 @@ function FeedPlayer({
                   } else {
                     // Fallback to standard media format
                     mediaItems = results.data
-                      .filter((item) => item.url || item.hdurl) // Filter out empty rows
-                      .map((item) => ({
-                        url: item.hdurl || item.url,
-                        text: item.explanation || item.description || "No description available",
-                        title: item.title || "No title available",
-                      }));
+                      .filter((row) => Object.values(row).some(value => value && String(value).trim()))
+                      .map((item, index) => {
+                        const imageUrl = item.hdurl || item.url;
+                        if (!imageUrl || !String(imageUrl).startsWith('http')) {
+                          if (isProductsList) {
+                            const titleCandidate = item.Name || item.Product || item.title || item.Company || `Item ${index + 1}`;
+                            const preferredOrder = ['Company', 'Product', 'Name', 'Category', 'Manufacturer', 'Model', 'Type'];
+                            const seen = new Set();
+                            const orderedKeys = [...preferredOrder.filter(k => item[k]), ...Object.keys(item).filter(k => item[k] && !seen.has(k) && (seen.add(k), true))];
+                            const textLines = orderedKeys
+                              .map((key) => {
+                                const val = item[key];
+                                if (val === undefined || val === null) return null;
+                                const str = String(val).trim();
+                                return str ? `${key}: ${str}` : null;
+                              })
+                              .filter(Boolean);
+                            const text = textLines.length > 0 ? textLines.join('\n') : (item.description || 'No description available');
+                            return {
+                              url: null,
+                              text,
+                              title: titleCandidate,
+                              type: 'products',
+                              rawData: item
+                            };
+                          }
+                          // Non-products: skip entries without valid URL
+                          return null;
+                        }
+                        return {
+                          url: imageUrl,
+                          text: item.explanation || item.description || "No description available",
+                          title: item.title || "No title available",
+                          rawData: item
+                        };
+                      }).filter(item => item !== null);
                   }
+                  
+                  // Optional filtering for products lists via URL params: search and cat
+                  if (isProductsList && (searchParam || catParam)) {
+                    mediaItems = mediaItems.filter((m) => {
+                      if (!m || !m.rawData) return false;
+                      const values = Object.values(m.rawData || {}).map(v => String(v || '').toLowerCase());
+                      const title = String(m.title || '').toLowerCase();
+                      const text = String(m.text || '').toLowerCase();
+                      const categoryValue = (() => {
+                        const rd = m.rawData || {};
+                        return (rd.category || rd.Category || rd.cat || rd.Cat || rd.sector || rd.Sector || '').toString().toLowerCase();
+                      })();
+                      const searchOk = searchParam ? (title.includes(searchParam) || text.includes(searchParam) || values.some(v => v.includes(searchParam))) : true;
+                      const catOk = catParam ? (categoryValue.includes(catParam)) : true;
+                      return searchOk && catOk;
+                    });
+                  }
+                  
+                  // Safety fallback: if products list produced 0 items, build simple text-only items from raw rows
+                  if (isProductsList && (!mediaItems || mediaItems.length === 0)) {
+                    try {
+                      mediaItems = (results.data || [])
+                        .filter((row) => row && Object.values(row).some(v => v && String(v).trim()))
+                        .map((row, idx) => {
+                          const titleCandidate = row.Name || row.Product || row.title || row.Company || row.ID || `Item ${idx + 1}`;
+                          const orderedKeys = ['Name','Product','Company','ID','Category','Address','County','Zip','Latitude','Longitude'];
+                          const seen = new Set();
+                          const keys = [...orderedKeys.filter(k => row[k]), ...Object.keys(row).filter(k => row[k] && !seen.has(k) && (seen.add(k), true))];
+                          const textLines = keys.map(k => `${k}: ${String(row[k]).trim()}`);
+                          return { url: null, text: textLines.join('\n'), title: titleCandidate, type: 'products', rawData: row };
+                        });
+                      console.log(`[FeedPlayer] Safety fallback built items for '${feedName}':`, mediaItems.length);
+                    } catch (e) {
+                      console.warn('Products safety fallback failed:', e);
+                    }
+                  }
+                  try { console.log(`[FeedPlayer] Built items for '${feedName}':`, mediaItems.length); } catch (e) {}
                   
                   resolve(mediaItems);
                 },
