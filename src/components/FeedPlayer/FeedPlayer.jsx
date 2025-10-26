@@ -2537,22 +2537,51 @@ function FeedPlayer({
             </li>
             <li className="controls-menu-item" onClick={() => {
               setShowControlsMenu(false);
-              if (handleMenuClick) handleMenuClick("viewPage");
+                            setCurrentDisplayMode("media");
+
+              if (memberSenseProps.setSidePanelView) {
+      memberSenseProps.setSidePanelView(null);
+    }
+    if (setShowMemberSenseOverlay) {
+      setShowMemberSenseOverlay(false);
+    }
+
+    // now trigger the existing viewPage effect
+    if (setSelectedOption) {
+      setSelectedOption("viewPage");
+    } else if (handleMenuClick) {
+      // if your parent sets selectedOption via this callback
+      handleMenuClick("viewPage");
+    }
+
             }}>
               <i className="ri-video-line"></i>
               <span>View Page</span>
             </li>
             <li className="controls-menu-item" onClick={() => {
               setShowControlsMenu(false);
+                            if (isViewPageMode) {
+      exitViewPageMode();
+    } else {
+      setSelectedMediaList(prev => {
+        const filtered = prev.filter(i => i?.type !== "page");
+        if (filtered.length && (currentMedia?.type === "page" || !filtered.includes(currentMedia))) {
+          setCurrentMediaIndex(0);
+          setCurrentMedia(filtered[0]);
+        }
+        return filtered;
+      });
+    }
+    setCurrentDisplayMode("media");
+    setSelectedOption && setSelectedOption("");
               if (memberSenseProps.setSidePanelView) {
                 memberSenseProps.setSidePanelView(null);
               }
-              if (setShowMemberSenseOverlay) {
-                setShowMemberSenseOverlay(true);
-              }
+             setShowMemberSenseOverlay && setShowMemberSenseOverlay(true);
               if (memberSenseProps.handleViewChange) {
                 memberSenseProps.handleViewChange("MemberSense");
               }
+
             }}>
               <i className="ri-user-line"></i>
               <span>MemberSense</span>

@@ -479,6 +479,7 @@
   min-height: 100%;
   background: transparent;
   overflow: hidden;
+  order: 1; 
     }
     
     // Right column - narrower, contains main MemberSense content
@@ -492,6 +493,7 @@
   border-left: 1px solid rgba(0, 0, 0, 0.1);
   overflow-y: auto;
   min-width: 300px; // optional safety for very narrow screens
+  order: 2;
     }
     
     &.single-column {
