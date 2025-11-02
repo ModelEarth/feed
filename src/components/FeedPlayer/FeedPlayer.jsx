@@ -2280,18 +2280,7 @@ function FeedPlayer({
               
               {/* Left column content - show Discord content if view is selected, otherwise show default */}
               <div className="membersense-left-content">
-                {!isNarrowScreen && !isLeftPanelExpanded && (
-                  <button
-                    className="membersense-expand-toggle"
-                    onClick={() => {
-                      setIsLeftPanelExpanded(true);
-                      setShowRightColumn(true);
-                    }}
-                    title="Expand overlay"
-                  >
-                    <i className="ri-arrow-left-s-line"></i>
-                  </button>
-                )}
+                
 
                 <div className="membersense-content-box">
                   <div style={{ fontSize: '48px', marginBottom: '20px' }}>🎬</div>
@@ -2316,6 +2305,8 @@ function FeedPlayer({
             
             {showRightColumn && (
               <div className="membersense-right-column">
+
+              
               
               {/* Validation message for narrow screens - positioned at top of right column */}
               {memberSenseProps.error && isNarrowScreen && (
@@ -2330,6 +2321,18 @@ function FeedPlayer({
               {/* Main MemberSense content */}
               <div className="membersense-overlay-content">
                 <div className="membersense-overlay-header">
+                {!isNarrowScreen && !isLeftPanelExpanded && (
+                  <button
+                    className="membersense-expand-toggle"
+                    onClick={() => {
+                      setIsLeftPanelExpanded(true);
+                      setShowRightColumn(true);
+                    }}
+                    title="Expand overlay"
+                  >
+                    <i className="ri-arrow-left-s-line"></i>
+                  </button>
+                )}
                   <button
                     type="button"
                     className="membersense-panel-close"
