@@ -494,6 +494,10 @@
   overflow-y: auto;
   min-width: 300px; // optional safety for very narrow screens
   order: 2;
+
+ 
+
+
     }
     
     &.single-column {
@@ -538,19 +542,55 @@
     }
 
     .membersense-overlay-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 18px 24px;
-      position: sticky;
-      top: 0;
-      background: rgba(255, 255, 255, 0.95);
-      z-index: 105;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+       position: sticky;
+    top: 0;
+    z-index: 105;
+    background: rgba(255,255,255,.95);
+    border-bottom: 1px solid rgba(0,0,0,.05);
+    padding: 18px 72px 18px 104px;   
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky; 
+    position: relative;
+
+
+ .membersense-expand-toggle {
+        position: absolute;
+        top: 18px;
+      left: 4px;              /* <- pin to left edge */
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 11;
+        color: #333;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.1);
+          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+          transform: translateY(-1px);
+        }
+
+        i {
+          font-size: 22px;
+          line-height: 1;
+        }
+      }
 
       .membersense-panel-close {
+        position: absolute;
         background: rgba(0, 0, 0, 0.05);
         border: none;
+         top: 18px;
+      left: 40px; 
         border-radius: 50%;
         width: 32px;
         height: 32px;
@@ -567,6 +607,9 @@
           background-color: rgba(0, 0, 0, 0.1);
           transform: scale(1.05);
         }
+
+       
+
       }
 
       .membersense-server-link {
@@ -603,6 +646,7 @@
         font-size: 18px;
         font-weight: 600;
         color: #222;
+        left: 90px;
       }
     }
     
@@ -615,35 +659,7 @@
       padding: 20px;
       position: relative; // Enable absolute positioning for close button
       
-      .membersense-expand-toggle {
-        position: absolute;
-        top: 20px;
-        right: 20px;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        border: 1px solid rgba(0, 0, 0, 0.1);
-        background: rgba(255, 255, 255, 0.92);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 11;
-        color: #333;
-        transition: all 0.2s ease;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-
-        &:hover {
-          background: #fff;
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-          transform: translateY(-1px);
-        }
-
-        i {
-          font-size: 22px;
-          line-height: 1;
-        }
-      }
+     
     }
     
     // Centered transparent content box
