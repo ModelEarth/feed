@@ -547,7 +547,7 @@
     z-index: 105;
     background: rgba(255,255,255,.95);
     border-bottom: 1px solid rgba(0,0,0,.05);
-    padding: 18px 72px 18px 64px;   
+    padding: 18px 72px 18px 104px;   
     display: flex;
     align-items: center;
     gap: 12px;
@@ -586,10 +586,11 @@
       }
 
       .membersense-panel-close {
+        position: absolute;
         background: rgba(0, 0, 0, 0.05);
         border: none;
          top: 18px;
-      left: 30px; 
+      left: 40px; 
         border-radius: 50%;
         width: 32px;
         height: 32px;
@@ -645,6 +646,7 @@
         font-size: 18px;
         font-weight: 600;
         color: #222;
+        left: 90px;
       }
     }
     
