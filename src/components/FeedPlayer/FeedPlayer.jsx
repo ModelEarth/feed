@@ -140,6 +140,16 @@ function FeedPlayer({
     }
   }, [showMemberSenseOverlay]);
 
+  // Remove #members=discord hash when overlay closes so it doesn't reopen on refresh
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (!showMemberSenseOverlay && window.location.hash === "#members=discord") {
+      const { pathname, search } = window.location;
+      window.history.replaceState(null, "", pathname + search);
+    }
+  }, [showMemberSenseOverlay]);
+
 
   const imageDuration = 4;
   const pageDuration = 10; // Pages last 10 seconds
