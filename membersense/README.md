@@ -5,7 +5,7 @@
 
 DreamStudio's MemberSense Discord Integration is a modern, responsive web application that combines a video player with team member overviews and channel viewing capabilities. Our frontend-focused project showcases smooth transitions, fullscreen support, and interactive user interfaces.
 
-Also see [Backend Setup](https://github.com/ModelEarth/members)
+Also see [Backend Setup](backend)
 
 ## Features
 

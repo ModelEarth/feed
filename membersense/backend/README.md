@@ -1,8 +1,8 @@
 [Home](../)
 
-# MemberSense
+# MemberSense Backend
 
-A powerful Bun app for the Discord API (and later Microsoft Outlook) which securely manages private keys in both Github and the .env.local file. Integrated as a Zoom-style grid display within our [FeedPlayer Frontend](https://dreamstudio.com/feed/).
+The MemberSense backend is a Bun app for the Discord API (and later Microsoft Outlook hopefully) which securely manages private keys in both Github and the .env.local file. Integrated as a Zoom-style grid display within our [FeedPlayer Frontend](https://dreamstudio.com/feed/).
 
 ## Tech Stack
 
