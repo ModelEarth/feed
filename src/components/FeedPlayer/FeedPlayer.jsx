@@ -2572,6 +2572,62 @@ function FeedPlayer({
               <i className="ri-video-line"></i>
               <span>View Page</span>
             </li>
+            {/* Members */}
+<li
+  className="controls-menu-item"
+  onClick={() => {
+    setShowControlsMenu(false);
+
+    // make sure we’re in normal media mode
+    setCurrentDisplayMode("media");
+    setSelectedOption && setSelectedOption("");
+
+    if (isViewPageMode) {
+      exitViewPageMode();
+    }
+
+    setShowMemberSenseOverlay && setShowMemberSenseOverlay(true);
+    setIsLeftPanelExpanded(false);     // normal 2-column
+    setShowRightColumn(true);
+
+    // right column = members grid
+    memberSenseProps.setSidePanelView &&
+      memberSenseProps.setSidePanelView("Showcase");
+    memberSenseProps.handleViewChange &&
+      memberSenseProps.handleViewChange("Showcase");
+  }}
+>
+  <i className="ri-user-line"></i>
+  <span>Members</span>
+</li>
+
+{/* Posts */}
+<li
+  className="controls-menu-item"
+  onClick={() => {
+    setShowControlsMenu(false);
+
+    setCurrentDisplayMode("media");
+    setSelectedOption && setSelectedOption("");
+
+    if (isViewPageMode) {
+      exitViewPageMode();
+    }
+
+    setShowMemberSenseOverlay && setShowMemberSenseOverlay(true);
+    setIsLeftPanelExpanded(false);
+    setShowRightColumn(true);
+
+    // right column = Discord posts/channels
+    memberSenseProps.setSidePanelView &&
+      memberSenseProps.setSidePanelView("DiscordViewer");
+    memberSenseProps.handleViewChange &&
+      memberSenseProps.handleViewChange("DiscordViewer");
+  }}
+>
+  <i className="ri-chat-3-line"></i>
+  <span>Posts</span>
+</li>
             <li className="controls-menu-item" onClick={() => {
               setShowControlsMenu(false);
                             if (isViewPageMode) {
@@ -2598,7 +2654,7 @@ function FeedPlayer({
 
             }}>
               <i className="ri-user-line"></i>
-              <span>MemberSense</span>
+              <span>Connect Discord</span>
             </li>
             {isFullScreen && (
               <li className="controls-menu-item" onClick={() => {
