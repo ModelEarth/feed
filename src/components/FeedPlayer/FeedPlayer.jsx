@@ -2347,11 +2347,12 @@ function FeedPlayer({
                     type="button"
                     className="membersense-panel-close"
                     onClick={() => {
-                      if (memberSenseProps.sidePanelView && memberSenseProps.setSidePanelView) {
-                        memberSenseProps.setSidePanelView(null);
-                      } else {
-                        setShowMemberSenseOverlay(false);
-                      }
+                      if (memberSenseProps.setSidePanelView) {
+      memberSenseProps.setSidePanelView(null);
+    }
+
+    // Always close the overlay and return to main video/image
+    setShowMemberSenseOverlay(false);
                     }}
                     title={memberSenseProps.sidePanelView ? "Close panel and return to video" : "Close overlay"}
                   >
