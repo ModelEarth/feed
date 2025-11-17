@@ -216,8 +216,8 @@ const MemberSense = ({
         </p>
       </div>
       <div className="navigation-buttons">
-        <button className="nav-button" onClick={() => handleViewChange("Showcase")} title="Show All Members">Members</button>
-        <button className="nav-button" onClick={() => handleViewChange("DiscordViewer")} title="View Discord Channels">Posts</button>
+        {/* <button className="nav-button" onClick={() => handleViewChange("Showcase")} title="Show All Members">Members</button>
+        <button className="nav-button" onClick={() => handleViewChange("DiscordViewer")} title="View Discord Channels">Posts</button> */}
         {(useMockData || !serverInfo) && (
           <button
             className="nav-button view-discord-btn"

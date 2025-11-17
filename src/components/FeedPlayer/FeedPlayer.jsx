@@ -202,60 +202,62 @@ function FeedPlayer({
     };
   }, []);
 
-  // Handle view page action
-  useEffect(() => {
-    if (selectedOption === "viewPage") {
-      // Store current state before switching to View Page
-      setPreviousMediaState({
-        media: currentMedia,
-        index: currentMediaIndex,
-        list: [...selectedMediaList]
-      });
-      
-      // Create a page scene and add it to the current media list
-      const pageScene = {
-        type: 'page',
-        title: 'Team Projects Page',
-        description: 'Displaying team projects page content',
-        url: null, // Pages don't have URLs
-      };
-      
-      // Add the page scene to the selectedMediaList
-      setSelectedMediaList(prev => [...prev, pageScene]);
-      
-      // Switch to the page scene
-      const newIndex = selectedMediaList.length;
-      setCurrentMediaIndex(newIndex);
-      setCurrentMedia(pageScene);
-      
-      // Enter View Page mode
-      setIsViewPageMode(true);
-      
-      // Clear the selected option
-      setSelectedOption("");
-    }
-  }, [selectedOption, selectedMediaList, currentMedia, currentMediaIndex, setSelectedOption]);
 
+const startViewPageMode = () => {
+  if (!selectedMediaList || selectedMediaList.length === 0) return;
+
+  // Save current state so we can restore later
+  setPreviousMediaState({
+    media: currentMedia,
+    index: currentMediaIndex,
+    list: [...selectedMediaList],
+  });
+
+  const pageScene = {
+    type: "page",
+    title: "Team Projects Page",
+    description: "Displaying team projects page content",
+    url: null,
+  };
+
+  setSelectedMediaList((prev) => {
+    const newList = [...prev, pageScene];
+    const newIndex = newList.length - 1;
+
+    setCurrentMediaIndex(newIndex);
+    setCurrentMedia(pageScene);
+
+    return newList;
+  });
+
+  setIsViewPageMode(true);
+};
+
+  // Handle view page action
+useEffect(() => {
+  if (selectedOption === "viewPage") {
+    startViewPageMode();
+    setSelectedOption("");
+  }
+}, [selectedOption, setSelectedOption]);
   // Function to exit View Page mode
   const exitViewPageMode = () => {
-    setIsViewPageMode(false);
-    
-    // Restore previous state if available
-    if (previousMediaState) {
-      setSelectedMediaList(previousMediaState.list);
-      setCurrentMediaIndex(previousMediaState.index);
-      setCurrentMedia(previousMediaState.media);
-      setPreviousMediaState(null);
-    } else {
-      // Fallback: remove page scenes and return to first non-page item
-      const filteredList = selectedMediaList.filter(item => item.type !== 'page');
-      setSelectedMediaList(filteredList);
-      if (filteredList.length > 0) {
-        setCurrentMediaIndex(0);
-        setCurrentMedia(filteredList[0]);
-      }
+  setIsViewPageMode(false);
+
+  if (previousMediaState) {
+    setSelectedMediaList(previousMediaState.list);
+    setCurrentMediaIndex(previousMediaState.index);
+    setCurrentMedia(previousMediaState.media);
+    setPreviousMediaState(null);
+  } else {
+    const filteredList = selectedMediaList.filter(item => item.type !== "page");
+    setSelectedMediaList(filteredList);
+    if (filteredList.length > 0) {
+      setCurrentMediaIndex(0);
+      setCurrentMedia(filteredList[0]);
     }
-  };
+  }
+};
 
   // Helper function to show video frame at 2 seconds when paused
   const showVideoPreviewFrame = useCallback(() => {
@@ -420,15 +422,22 @@ function FeedPlayer({
   };
 
   useEffect(() => {
-    if (currentMedia && selectedMediaList.length > 0)
-      updateURLHash(mediaList[index].list, currentMediaIndex);
-  }, [
-    currentMediaIndex,
-    currentMedia,
-    mediaList,
-    index,
-    selectedMediaList.length,
-  ]);
+  // Don't sync URL hash while in View Page mode / page scene
+  if (isViewPageMode || (currentMedia && isPageFile(currentMedia))) {
+    return;
+  }
+
+  if (currentMedia && selectedMediaList.length > 0) {
+    updateURLHash(mediaList[index].list, currentMediaIndex);
+  }
+}, [
+  currentMediaIndex,
+  currentMedia,
+  mediaList,
+  index,
+  selectedMediaList.length,
+  isViewPageMode,
+]);
 
   useEffect(() => {
     const { list: hashList } = parseHash();
@@ -525,6 +534,7 @@ function FeedPlayer({
 
   useEffect(() => {
     const handleHashChange = () => {
+       if (isViewPageMode) return;
       const { list: hashList, scene } = parseHash();
 
       if (hashList) {
@@ -607,7 +617,7 @@ function FeedPlayer({
     // Trigger on component mount
     handleHashChange();
     return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [mediaList, listofMedia]);
+  }, [mediaList, listofMedia, isViewPageMode]);
 
   useEffect(() => {
     if (mediaList && mediaList.length > 0) {
@@ -1577,10 +1587,18 @@ function FeedPlayer({
   }, [currentMedia, handleNext, isMute]);
 
   useEffect(() => {
-    if (selectedMediaList.length > 0) {
-      setCurrentMedia(selectedMediaList[currentMediaIndex]);
-    }
-  }, [currentMediaIndex, mediaList, setCurrentMedia]);
+  if (!selectedMediaList || selectedMediaList.length === 0) return;
+
+  const safeIndex =
+    currentMediaIndex < selectedMediaList.length
+      ? currentMediaIndex
+      : selectedMediaList.length - 1;
+
+  // Avoid resetting if it's already the same object
+  if (selectedMediaList[safeIndex] !== currentMedia) {
+    setCurrentMedia(selectedMediaList[safeIndex]);
+  }
+}, [selectedMediaList, currentMediaIndex, currentMedia, setCurrentMedia]);
 
   useEffect(() => {
     if (selectedMediaList.length > 0 && !currentMedia) {
@@ -2347,11 +2365,12 @@ function FeedPlayer({
                     type="button"
                     className="membersense-panel-close"
                     onClick={() => {
-                      if (memberSenseProps.sidePanelView && memberSenseProps.setSidePanelView) {
-                        memberSenseProps.setSidePanelView(null);
-                      } else {
-                        setShowMemberSenseOverlay(false);
-                      }
+                      if (memberSenseProps.setSidePanelView) {
+      memberSenseProps.setSidePanelView(null);
+    }
+
+    // Always close the overlay and return to main video/image
+    setShowMemberSenseOverlay(false);
                     }}
                     title={memberSenseProps.sidePanelView ? "Close panel and return to video" : "Close overlay"}
                   >
@@ -2548,29 +2567,83 @@ function FeedPlayer({
               <i className="ri-link"></i>
               <span>Paste Your Video URL</span>
             </li>
-            <li className="controls-menu-item" onClick={() => {
-              setShowControlsMenu(false);
-                            setCurrentDisplayMode("media");
+           <li
+  className="controls-menu-item"
+  onClick={() => {
+    setShowControlsMenu(false);
+    setCurrentDisplayMode("media");
 
-              if (memberSenseProps.setSidePanelView) {
+    // Close any MemberSense views
+    if (memberSenseProps.setSidePanelView) {
       memberSenseProps.setSidePanelView(null);
     }
     if (setShowMemberSenseOverlay) {
       setShowMemberSenseOverlay(false);
     }
 
-    // now trigger the existing viewPage effect
-    if (setSelectedOption) {
-      setSelectedOption("viewPage");
-    } else if (handleMenuClick) {
-      // if your parent sets selectedOption via this callback
-      handleMenuClick("viewPage");
+    // ✅ Directly open the page view
+    startViewPageMode();
+  }}
+>
+  <i className="ri-video-line"></i>
+  <span>View Page</span>
+</li>
+            {/* Members */}
+<li
+  className="controls-menu-item"
+  onClick={() => {
+    setShowControlsMenu(false);
+
+    // make sure we’re in normal media mode
+    setCurrentDisplayMode("media");
+    setSelectedOption && setSelectedOption("");
+
+    if (isViewPageMode) {
+      exitViewPageMode();
     }
 
-            }}>
-              <i className="ri-video-line"></i>
-              <span>View Page</span>
-            </li>
+    setShowMemberSenseOverlay && setShowMemberSenseOverlay(true);
+    setIsLeftPanelExpanded(false);     // normal 2-column
+    setShowRightColumn(true);
+
+    // right column = members grid
+    memberSenseProps.setSidePanelView &&
+      memberSenseProps.setSidePanelView("Showcase");
+    memberSenseProps.handleViewChange &&
+      memberSenseProps.handleViewChange("Showcase");
+  }}
+>
+  <i className="ri-user-line"></i>
+  <span>Members</span>
+</li>
+
+{/* Posts */}
+<li
+  className="controls-menu-item"
+  onClick={() => {
+    setShowControlsMenu(false);
+
+    setCurrentDisplayMode("media");
+    setSelectedOption && setSelectedOption("");
+
+    if (isViewPageMode) {
+      exitViewPageMode();
+    }
+
+    setShowMemberSenseOverlay && setShowMemberSenseOverlay(true);
+    setIsLeftPanelExpanded(false);
+    setShowRightColumn(true);
+
+    // right column = Discord posts/channels
+    memberSenseProps.setSidePanelView &&
+      memberSenseProps.setSidePanelView("DiscordViewer");
+    memberSenseProps.handleViewChange &&
+      memberSenseProps.handleViewChange("DiscordViewer");
+  }}
+>
+  <i className="ri-chat-3-line"></i>
+  <span>Posts</span>
+</li>
             <li className="controls-menu-item" onClick={() => {
               setShowControlsMenu(false);
                             if (isViewPageMode) {
@@ -2597,7 +2670,7 @@ function FeedPlayer({
 
             }}>
               <i className="ri-user-line"></i>
-              <span>MemberSense</span>
+              <span>Connect Discord</span>
             </li>
             {isFullScreen && (
               <li className="controls-menu-item" onClick={() => {
