@@ -703,6 +703,16 @@ useEffect(() => {
     // This prevents disrupting the entire feed when one image fails
   };
 
+  const handleDiscordConnected = () => {
+  // make sure overlay is visible
+  if (setShowMemberSenseOverlay) {
+    setShowMemberSenseOverlay(true);
+  }
+  // expand overlay across the player window
+  setIsLeftPanelExpanded(true);
+  setShowRightColumn(true);
+};
+
   // Wrap the loadFeed function to pass the media title to the global error handler
   const loadFeed = async (media, templistofMedia) => {
     try {
@@ -2449,6 +2459,7 @@ useEffect(() => {
                       useMockData={memberSenseProps.useMockData}
                       onToggleMockData={memberSenseProps.onToggleMockData}
                       handleViewChange={memberSenseProps.handleViewChange}
+                      onDiscordConnected={handleDiscordConnected}
                     />
                   </div>
                 )}
