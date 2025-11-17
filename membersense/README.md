@@ -28,8 +28,9 @@ To use the MemberSense Discord Integration in production mode, you need to set u
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Click on "New Application" and give your application a name.
 3. Click the "Bot" tab in the left sidebar. Click "Add Bot" if you don't have one yet.
-4. Under the bot's username, click "Copy" to copy your bot token. Keep this token secret and secure.
+4. Under the bot’s username, click “Copy” to copy your bot token. Keep this token secret and secure. If the token is not visible, reset it and then copy it.
 5. Scroll down to the "Privileged Gateway Intents" section and enable all the checkboxes ("Presence Intent", "Server Members Intent" and "Message Content Intent").
+6. Click on "Save Changes" before continuing to the next step.
 
 Note: The OAuth2 URL generation is primarily for inviting the bot to a server. If you're adding the bot to your own server or have other means of adding it, you may skip steps 6-9.
 
@@ -49,12 +50,12 @@ Before Loren revised Aug 18, 2025
    - Read Message History
 -->
 
-6. Under left side nav "OAuth2" add a Redirect URL and select that URL in a subsequent step.
+7. Under left side nav "OAuth2" add a Redirect URL and select that URL in a subsequent step.
 
 http://localhost:8887/feed/#members=discord
 
 
-7. Under left side nav "OAuth2 > OAuth2 URL Generator > Scopes", select these scopes:
+8. Under left side nav "OAuth2 > OAuth2 URL Generator > Scopes", select these scopes:
 
 **Required Scopes:**
 - `bot` - If you're creating a bot application (most common for this use case)
@@ -65,7 +66,7 @@ http://localhost:8887/feed/#members=discord
 - `messages.read` - If you need to read message history (requires additional bot permissions)
 
 
-8. After selecting scopes, the "Bot Permissions" section will appear. Select these permissions:
+9. After selecting scopes, the "Bot Permissions" section will appear. Select these permissions:
 
 **Required Bot Permissions:**
 - View Channels
@@ -84,24 +85,24 @@ Additional base permissions might be needed depending on your specific use case.
 -->
 
 
-9. Copy the generated OAuth2 URL and open it in a new browser tab. Select the server where you want to add the bot and click "Authorize".
+10. Copy the generated OAuth2 URL and open it in a new browser tab. Select the server where you want to add the bot and click "Authorize".
 
-10. **Important**: After authorization, you should have "Manage Server" permission on the server to access all bot features.
+11. **Important**: After authorization, you should have "Manage Server" permission on the server to access all bot features.
 
 ## Environment Configuration
 
-The Discord bot token must be configured in **two places**:
+The Discord bot token must be configured as **shown below**:
 
-1. **Backend Configuration**: `membersense/backend/.env`
+1. **Backend Configuration**: `feed/membersense/backend/.env`
    ```
    DISCORD_BOT_TOKEN=your_bot_token_here
    ```
 
-2. **Frontend Configuration**: `feed/.env` (root level)
+<!-- 2. **Frontend Configuration**: `feed/.env` (root level)
    ```
    VITE_DISCORD_BOT_TOKEN=your_bot_token_here
    VITE_API_BASE_URL=http://localhost:3000/
-   ```
+   ``` -->
 
 
 For more detailed instructions, you can refer to the [official Discord.js guide](https://discordjs.guide/preparations/setting-up-a-bot-application.html).
