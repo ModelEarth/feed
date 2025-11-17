@@ -547,7 +547,7 @@
     z-index: 105;
     background: rgba(255,255,255,.95);
     border-bottom: 1px solid rgba(0,0,0,.05);
-    padding: 18px 72px 18px 104px;   
+     padding: 18px 72px 18px 104px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -769,7 +769,7 @@
       // Override the normal MemberSense container styles for overlay
       .member-sense-wrapper {
         height: 100%;
-        padding: 24px;
+         padding: 12px 16px;   
         position: relative; // Enable absolute positioning for close button within wrapper
         display: flex;
         flex-direction: column;
@@ -1056,5 +1056,20 @@
       font-size: 13px;
       line-height: 1.4;
     }
+  }
+}
+
+.FeedPlayer__video-container .membersense-overlay {
+
+  .membersense-right-column {
+    padding: 0 !important;        /* Remove outer padding */
+  }
+
+  .membersense-overlay-content .member-sense-wrapper {
+    padding: 4px 6px !important;   /* Very tight wrapper */
+  }
+
+  .membersense-overlay-content .member-sense-wrapper .member-sense-container {
+    padding: 2px !important;       /* Reduce inner padding */
   }
 }

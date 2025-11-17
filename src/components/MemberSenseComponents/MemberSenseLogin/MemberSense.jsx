@@ -39,6 +39,7 @@ const MemberSense = ({
   useMockData = true,
   onToggleMockData,
   handleViewChange,
+  onDiscordConnected,
 }) => {
   // State management
   const [showToken, setShowToken] = useState(false);
@@ -49,6 +50,15 @@ const MemberSense = ({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showTokenForm, setShowTokenForm] = useState(false); // New state to control token form visibility
 
+   const handleConnectDiscordClick = () => {
+    // show the token form like before
+    setShowTokenForm(true);
+
+    // tell FeedPlayer to expand the overlay
+    if (onDiscordConnected) {
+      onDiscordConnected();
+    }
+  };
   /**
    * Handles initial token and server info setup
    */
@@ -221,7 +231,7 @@ const MemberSense = ({
         {(useMockData || !serverInfo) && (
           <button
             className="nav-button view-discord-btn"
-            onClick={() => setShowTokenForm(true)}
+            onClick={handleConnectDiscordClick}
             title="Connect to Discord"
           >
             Connect Discord
@@ -329,3 +339,5 @@ const MemberSense = ({
 };
 
 export default MemberSense;
+
+

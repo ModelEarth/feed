@@ -131,7 +131,8 @@ function FeedPlayer({
   const [showRightColumn, setShowRightColumn] = useState(true); // 37 - Control right column visibility
   const [isLeftPanelExpanded, setIsLeftPanelExpanded] = useState(false); // 38 - Track if left panel is expanded
   const [showControlsMenu, setShowControlsMenu] = useState(false); // 39 - Control menu visibility
-
+const controlsMenuRef = useRef(null);
+const menuButtonRef = useRef(null);
   // Reset right column visibility when overlay is shown
   useEffect(() => {
     if (showMemberSenseOverlay) {
@@ -232,7 +233,30 @@ const startViewPageMode = () => {
 
   setIsViewPageMode(true);
 };
+useEffect(() => {
+  if (!showControlsMenu) return;
 
+  const handleClickOutside = (event) => {
+    const menuEl = controlsMenuRef.current;
+    const buttonEl = menuButtonRef.current;
+
+    // If click is not inside the menu and not on the 3-dot button, close it
+    if (
+      menuEl &&
+      !menuEl.contains(event.target) &&
+      buttonEl &&
+      !buttonEl.contains(event.target)
+    ) {
+      setShowControlsMenu(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, [showControlsMenu]);
   // Handle view page action
 useEffect(() => {
   if (selectedOption === "viewPage") {
@@ -702,6 +726,16 @@ useEffect(() => {
     // Don't replace the entire media list, just skip the problematic item
     // This prevents disrupting the entire feed when one image fails
   };
+
+  const handleDiscordConnected = () => {
+  // make sure overlay is visible
+  if (setShowMemberSenseOverlay) {
+    setShowMemberSenseOverlay(true);
+  }
+  // expand overlay across the player window
+  setIsLeftPanelExpanded(true);
+  setShowRightColumn(true);
+};
 
   // Wrap the loadFeed function to pass the media title to the global error handler
   const loadFeed = async (media, templistofMedia) => {
@@ -2449,6 +2483,7 @@ useEffect(() => {
                       useMockData={memberSenseProps.useMockData}
                       onToggleMockData={memberSenseProps.onToggleMockData}
                       handleViewChange={memberSenseProps.handleViewChange}
+                      onDiscordConnected={handleDiscordConnected}
                     />
                   </div>
                 )}
@@ -2541,6 +2576,7 @@ useEffect(() => {
           {/* Menu Options Button */}
           <button
             className="control-button menu-options"
+            ref={menuButtonRef}   
             onClick={() => setShowControlsMenu(!showControlsMenu)}
             title="More Options"
           >
@@ -2551,7 +2587,7 @@ useEffect(() => {
       
       {/* Controls Menu - positioned above controls in lower right */}
       {showControlsMenu && (
-        <div className="feedplayer-controls-menu">
+        <div className="feedplayer-controls-menu" ref={controlsMenuRef} >
           <ul className="controls-menu-list">
             <li className="controls-menu-item" onClick={() => {
               setShowControlsMenu(false);
