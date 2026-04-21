@@ -36,22 +36,42 @@ const handleRequest = async (req) => {
   }
 
   // Auto-login using backend token
+
   if (method === 'POST' && path === '/api/auth/auto-login') {
     logRequest(req);
     try {
-      const backendToken = process.env.DISCORD_BOT_TOKEN;
+      // 1. Check if token was passed from browser cache via request body
+      let body = {};
+      try { body = await req.json(); } catch (_) { }
+
+      // 2. Fall back to feed/.env or docker/.env via environment
+      //    Priority: browser cache → DISCORD_BOT_TOKEN (feed/.env) → DISCORD_BOT_TOKEN_DOCKER (docker/.env)
+      const backendToken =
+        body.token ||
+        process.env.DISCORD_BOT_TOKEN ||
+        process.env.DISCORD_BOT_TOKEN_DOCKER;
+
       if (!backendToken) {
-        throw new Error('No Discord bot token configured on backend');
+        throw new Error(
+          'No Discord bot token found. Checked: request body (browser cache), feed/.env, docker/.env'
+        );
       }
-      
+
+      const tokenSource =
+        body.token ? 'browser cache' :
+          process.env.DISCORD_BOT_TOKEN ? 'feed/.env' :
+            'docker/.env';
+
+      console.log(`Using DISCORD_BOT_TOKEN from: ${tokenSource}`);
+
       const { client, guildInfo } = await createBot(backendToken);
       const sessionId = nanoid();
       sessions.set(sessionId, { bot: client, token: backendToken });
       console.log(`Auto-login session created: ${sessionId}`);
-      return new Response(JSON.stringify({ 
-        sessionId, 
-        message: 'Auto-login successful',
-        ...guildInfo // This spreads serverName, memberCount, and iconURL into the response
+      return new Response(JSON.stringify({
+        sessionId,
+        message: `Auto-login successful (token source: ${tokenSource})`,
+        ...guildInfo
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -64,7 +84,7 @@ const handleRequest = async (req) => {
       });
     }
   }
-
+  
   // Manual login (for custom tokens)
   if (method === 'POST' && path === '/api/auth/login') {
     logRequest(req);
