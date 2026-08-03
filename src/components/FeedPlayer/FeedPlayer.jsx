@@ -1838,6 +1838,31 @@ useEffect(() => {
         className="FeedPlayer__video-container"
         onMouseLeave={handleMouseLeave}
       >
+        {/* Top-right corner controls - dim until hovered, external to bottom bar */}
+      <div className="FeedPlayer__corner-controls">
+        <button
+          className="corner-control-button display-modes"
+          onClick={() => {
+            setShowDisplayModesPopup(!showDisplayModesPopup);
+            setShowControlsMenu(false);
+            setIsDropdownActive(false);
+          }}
+          title="Display Modes"
+        >
+          <i className="ri-layout-grid-line"></i>
+        </button>
+        <button
+          className="corner-control-button full-screen"
+          onClick={toggleFullScreen}
+          title="Full Screen"
+        >
+          <i
+            className={`ri-${
+              isFullScreen ? "fullscreen-exit" : "fullscreen"
+            }-line`}
+          ></i>
+        </button>
+      </div>
         {isLoading ? (
           <div className="FeedPlayer__loading">
             <div className="spinner"></div>
@@ -2549,29 +2574,7 @@ useEffect(() => {
             </>
           )}
           
-          {/* Display Modes Button */}
-          <button
-            className="control-button display-modes"
-            onClick={() => {
-              setShowDisplayModesPopup(!showDisplayModesPopup)
-              setShowControlsMenu(false);
-              setIsDropdownActive(false);
-            }}
-            title="Display Modes"
-          >
-            <i className="ri-layout-grid-line"></i>
-          </button>
           
-          <button
-            className="control-button full-screen"
-            onClick={toggleFullScreen}
-          >
-            <i
-              className={`ri-${
-                isFullScreen ? "fullscreen-exit" : "fullscreen"
-              }-line`}
-            ></i>
-          </button>
           
           {/* Menu Options Button */}
           <button
