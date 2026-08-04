@@ -22,6 +22,40 @@
     display: inline-block;
   }
 
+  &__corner-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  opacity: 0.35;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  .corner-control-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.55);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: rgba(0, 0, 0, 0.8);
+    }
+  }
+}
+
 
   &__loading {
     display: flex;
