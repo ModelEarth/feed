@@ -44,8 +44,9 @@ const handleRequest = async (req) => {
       let body = {};
       try { body = await req.json(); } catch (_) { }
 
-      // 2. Fall back to feed/.env or docker/.env via environment
-      //    Priority: browser cache → DISCORD_BOT_TOKEN (feed/.env) → DISCORD_BOT_TOKEN_DOCKER (docker/.env)
+      // 2. Fall back to process.env, however it was populated (feed/.env
+      //    locally, or a deployment-managed DISCORD_BOT_TOKEN_DOCKER var).
+      //    Priority: browser cache → DISCORD_BOT_TOKEN (feed/.env) → DISCORD_BOT_TOKEN_DOCKER (deployment env)
       const backendToken =
         body.token ||
         process.env.DISCORD_BOT_TOKEN ||
@@ -53,14 +54,14 @@ const handleRequest = async (req) => {
 
       if (!backendToken) {
         throw new Error(
-          'No Discord bot token found. Checked: request body (browser cache), feed/.env, docker/.env'
+          'No Discord bot token found. Checked: request body (browser cache), feed/.env, deployment env (DISCORD_BOT_TOKEN_DOCKER)'
         );
       }
 
       const tokenSource =
         body.token ? 'browser cache' :
           process.env.DISCORD_BOT_TOKEN ? 'feed/.env' :
-            'docker/.env';
+            'deployment env (DISCORD_BOT_TOKEN_DOCKER)';
 
       console.log(`Using DISCORD_BOT_TOKEN from: ${tokenSource}`);
 
