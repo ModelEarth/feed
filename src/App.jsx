@@ -13,6 +13,8 @@ import {
   Link,
   List,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 // Components
@@ -722,6 +724,19 @@ function App() {
             <button className="close-btn" onClick={() => setIsPopup(null)}>
               x
             </button>
+            {[-1, 1].map((step) => (
+              <button
+                key={step}
+                className={`lightbox-arrow ${step < 0 ? "prev" : "next"}`}
+                aria-label={step < 0 ? "Previous image" : "Next image"}
+                onClick={(e) => {
+                  e.stopPropagation(); // A click on the backdrop closes the lightbox
+                  window.dispatchEvent(new CustomEvent("lightboxStep", { detail: step }));
+                }}
+              >
+                {step < 0 ? <ChevronLeft size={40} /> : <ChevronRight size={40} />}
+              </button>
+            ))}
             {swiperData.mediaType === "video" ? (
               <iframe className="lightboxImg" src={swiperData.url} alt="Enlarged Video" allowFullScreen />
             ) : (

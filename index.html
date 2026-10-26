@@ -113,6 +113,17 @@
         }
       }
 
+      // The lightbox arrows step the visible swiper, which sends back the new slide
+      function handleLightboxStep(event) {
+        const swiperType = new URLSearchParams(window.location.hash.substring(1)).get("swiper") || "default";
+        const activeSwiper = document.querySelector(
+          swiperType === "filmstrip" ? ".swiper-filmstrip" : ".swiper-section"
+        );
+        if (activeSwiper && activeSwiper.contentWindow) {
+          activeSwiper.contentWindow.postMessage({ action: "stepSlide", step: event.detail }, window.location.origin);
+        }
+      }
+
       // Function to handle messages from the iframe
       function handleMessage(event) {
         if (allowedOrigins.includes(event.origin)) {
@@ -146,11 +157,13 @@
       function init() {
         window.addEventListener("hashchange", handleHashChange);
         window.addEventListener("message", handleMessage);
+        window.addEventListener("lightboxStep", handleLightboxStep);
         window.addEventListener("beforeunload", cleanup);
       }
       function cleanup() {
         window.removeEventListener("hashchange", handleHashChange);
         window.removeEventListener("message", handleMessage);
+        window.removeEventListener("lightboxStep", handleLightboxStep);
         window.removeEventListener("beforeunload", cleanup);
       }
       init();

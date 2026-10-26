@@ -416,7 +416,13 @@ useEffect(() => {
     if (otherParams.toString()) {
       hash += `&${otherParams.toString()}`;
     }
-    window.location.hash = hash;
+    // Scene changes replace the history entry so the back button skips past the slides.
+    // replaceState doesn't fire hashchange, and the callers already set the scene.
+    if (existingParams.get("list") === listName) {
+      window.history.replaceState(null, "", hash);
+    } else {
+      window.location.hash = hash;
+    }
   };
 
   const parseHash = () => {
