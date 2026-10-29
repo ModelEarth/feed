@@ -627,7 +627,6 @@ function displayRequestsCorsAnywhere(urlItem) {
         //console.error('Error:', xhr.status, xhr.statusText);
         errorOutput = 'Error xhr.status ' + xhr.status + ': ' + xhr.statusText;
     		errorOutput += "<br>Check that you've included an API Key.";
-    		errorOutput += "<br><a href='/localsite/tools/storage/api/' target='editstorage'>Edit your API Keys</a>";
     }
     if (errorOutput) {
 		  	$("#resultFull").html(errorOutput);
